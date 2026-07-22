@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { verifyFirebaseIdToken } from "@/lib/firebase/verify-id-token";
 import { isAdminEmail } from "@/lib/auth/admin-emails";
 
 export const runtime = "nodejs";
@@ -22,11 +23,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const auth = getFirebaseAdminAuth();
     const db = getFirebaseAdminDb();
-    if (!auth || !db) throw new Error("Admin SDK unavailable");
+    if (!db) throw new Error("Firestore Admin SDK unavailable");
 
-    const decoded = await auth.verifyIdToken(token);
+    const decoded = await verifyFirebaseIdToken(token);
     const email = decoded.email;
 
     if (!isAdminEmail(email)) {
