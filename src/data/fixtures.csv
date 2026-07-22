@@ -1,0 +1,19 @@
+Match_ID,Date,Day,Start_Time,End_Time,Team_A,Team_B,Stage,Overs,Ground
+R1-1,2026-07-27,Mon,09:00,10:00,The Dial-In XI,Bengaluru Blasters,Round 1,6,Ground 1
+R1-2,2026-07-27,Mon,10:00,11:00,Collab Ops Challengers,The Cluster XI,Round 1,6,Ground 1
+R1-3,2026-07-27,Mon,11:00,12:00,Aura Strikers,Cloud Chorus XI,Round 1,6,Ground 1
+R1-4,2026-07-27,Mon,12:00,13:00,Sixco CC XI,Play Bold XI,Round 1,6,Ground 1
+R1-5,2026-07-27,Mon,13:00,14:00,Data Warriors,Sixco SuperStrikers,Round 1,6,Ground 1
+R1-6,2026-07-27,Mon,14:00,15:00,Hit and Run,Rising Stars,Round 1,6,Ground 1
+R1-7,2026-07-28,Tue,09:00,10:00,Royal Ciscoians Bengaluru RCB,Collab Super Kings,Round 1,6,Ground 1
+R1-8,2026-07-28,Tue,10:00,11:00,Cisco Super Kings CSK,Slog Squad,Round 1,6,Ground 1
+R1-9,2026-07-28,Tue,11:00,12:00,11 Daulath's,Lifecycle Cricket Team,Round 1,6,Ground 1
+R2-1,2026-07-28,Tue,12:00,13:00,R1 9th Winner,R1 Best Looser 1,Round 2,6,Ground 1
+R2-2,2026-07-28,Tue,13:00,14:00,R1 8th Winner,R1 7th Winner,Round 2,6,Ground 1
+QF1,2026-07-29,Wed,09:00,10:15,Seed 1,Seed 8,Quarter-Final,8,Ground 1
+QF2,2026-07-29,Wed,10:15,11:30,Seed 2,Seed 7,Quarter-Final,8,Ground 1
+QF3,2026-07-29,Wed,11:30,12:45,Seed 3,Seed 6,Quarter-Final,8,Ground 1
+QF4,2026-07-29,Wed,12:45,14:00,Seed 4,Seed 5,Quarter-Final,8,Ground 1
+SF1,2026-07-30,Thu,09:00,11:00,QuarterFinal Winner 1,QuarterFinal Winner 4,Semi-Final,10,Ground 1
+SF2,2026-07-30,Thu,11:00,13:00,QuarterFinal Winner 2,QuarterFinal Winner 3,Semi-Final,10,Ground 1
+F,2026-07-30,Thu,13:30,15:00,SF1 Winner,SF2 Winner,Final,10,Ground 1

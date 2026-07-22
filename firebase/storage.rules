@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /team-logos/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /player-photos/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /sponsors/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /match-media/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+        && request.resource.size < 50 * 1024 * 1024;
+    }
+  }
+}

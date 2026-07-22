@@ -1,0 +1,1054 @@
+[
+  {
+    "name": "The Dial-In XI",
+    "shortName": "D",
+    "captain": "Sai Gajula",
+    "captainEmail": "saigajul@cisco.com",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Madan Kumar Tallapalem",
+        "email": "mtallapa@cisco.com"
+      },
+      {
+        "name": "Srinath Ganesh",
+        "email": "srganesh@cisco.com"
+      },
+      {
+        "name": "Ashish Singhal",
+        "email": "ashishsi@cisco.com"
+      },
+      {
+        "name": "Sai Gajula",
+        "email": "saigajul@cisco.com"
+      },
+      {
+        "name": "Kirana Kumara",
+        "email": "kkumara@cisco.com"
+      },
+      {
+        "name": "Shashwat Singh",
+        "email": "shashwsi@cisco.com"
+      },
+      {
+        "name": "Dipankar Das",
+        "email": "dipadas@cisco.com"
+      },
+      {
+        "name": "Prajwal Navada",
+        "email": "pnavada@cisco.com"
+      },
+      {
+        "name": "Jayaseelan Arulselvan",
+        "email": "jarulsel@cisco.com"
+      },
+      {
+        "name": "Arun Gopal",
+        "email": "arungopa@cisco.com"
+      },
+      {
+        "name": "Kishore Vadde",
+        "email": "kivadde@cisco.com"
+      },
+      {
+        "name": "Darshan Kumar K B",
+        "email": "darkb@cisco.com"
+      },
+      {
+        "name": "Hasmeet Singh Bedi",
+        "email": "hasbedi@cisco.com"
+      },
+      {
+        "name": "Umang Gupta",
+        "email": "umgupta@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Slog Squad",
+    "shortName": "SS",
+    "captain": "Shashank Shukla",
+    "captainEmail": "sshukla3@cisco.com",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Jawahar Parvez Mohammad",
+        "email": "jawamoha@cisco.com"
+      },
+      {
+        "name": "Abhishek Kumar Singh",
+        "email": "sinabhi4@cisco.com"
+      },
+      {
+        "name": "Ganesh Dhumal",
+        "email": "gadhumal@cisco.com"
+      },
+      {
+        "name": "Shubhang Drolia",
+        "email": "sdrolia@cisco.com"
+      },
+      {
+        "name": "Nagavishnu B K",
+        "email": "nabk@cisco.com"
+      },
+      {
+        "name": "Kush Chandok",
+        "email": "kchandok@cisco.com"
+      },
+      {
+        "name": "Gautam Kumar",
+        "email": "gautkum3@cisco.com"
+      },
+      {
+        "name": "SIVARAJU MATAM",
+        "email": "simatam@cisco.com"
+      },
+      {
+        "name": "Suprateek Nanda",
+        "email": "supnanda@cisco.com"
+      },
+      {
+        "name": "Saikiran Penubolu",
+        "email": "spenubol@cisco.com"
+      },
+      {
+        "name": "Chandramani bhatt",
+        "email": "chandbha@cisco.com"
+      },
+      {
+        "name": "Jijo Daniel Winston",
+        "email": "jiwinsto@cisco.com"
+      },
+      {
+        "name": "Shashank Shukla",
+        "email": null
+      }
+    ]
+  },
+  {
+    "name": "Collab Ops Challengers",
+    "shortName": "COC",
+    "captain": "Irfanuddin MD",
+    "captainEmail": "irmd@cisco.com",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Yella Ajay Reddy",
+        "email": "yellredd@cisco.com"
+      },
+      {
+        "name": "Sudheer Reddy Alluru",
+        "email": "salluru@cisco.com"
+      },
+      {
+        "name": "Kandula Sai Charan Reddy",
+        "email": "kandured@cisco.com"
+      },
+      {
+        "name": "Jaladi Ankamma Chowdary",
+        "email": "jankamma@cisco.com"
+      },
+      {
+        "name": "Rajeesh Rayaroth Mamangalavan",
+        "email": "rarayaro@cisco.com"
+      },
+      {
+        "name": "Irfanuddin MD",
+        "email": "irmd@cisco.com"
+      },
+      {
+        "name": "Javed Paidikalla",
+        "email": "jpaidika@cisco.com"
+      },
+      {
+        "name": "Shyam Krishna Manoj Gangumalla",
+        "email": "shgangum@cisco.com"
+      },
+      {
+        "name": "Sharath Krishnamurthy",
+        "email": "sharakri@cisco.com"
+      },
+      {
+        "name": "Nevil Fernandes",
+        "email": "nevifern@cisco.com"
+      },
+      {
+        "name": "Yasar Arafath",
+        "email": "yasarafa@cisco.com"
+      },
+      {
+        "name": "Ranjeeth Kumar Subramani",
+        "email": "ranjesub@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "The Cluster XI",
+    "shortName": "C",
+    "captain": "Praveen T P",
+    "captainEmail": "pthottum@cisco.com",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Raushan Kumar",
+        "email": "raukuma2@cisco.com"
+      },
+      {
+        "name": "Veeresha Nambiar",
+        "email": "venambia@cisco.com"
+      },
+      {
+        "name": "Kishan Yadav",
+        "email": "kishyada@cisco.com"
+      },
+      {
+        "name": "Krishna Jayakumar",
+        "email": "krijayak@cisco.com"
+      },
+      {
+        "name": "Deepak Chincholi",
+        "email": "dchincho@cisco.com"
+      },
+      {
+        "name": "Amith Gingade",
+        "email": "agingade@cisco.com"
+      },
+      {
+        "name": "Rishabh Mishra",
+        "email": "rishamis@cisco.com"
+      },
+      {
+        "name": "Ankit Singh",
+        "email": "ankitsi9@cisco.com"
+      },
+      {
+        "name": "Shiloni Pipalia",
+        "email": "spipalia@cisco.com"
+      },
+      {
+        "name": "Shaleen Mittal",
+        "email": "shalemit@cisco.com"
+      },
+      {
+        "name": "Pankaj Kumar Goel",
+        "email": "pangoel@cisco.com"
+      },
+      {
+        "name": "Nithesh Balaji D",
+        "email": "nbalajid@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Aura Strikers",
+    "shortName": "AS",
+    "captain": "Santosh Ambli",
+    "captainEmail": "sambli@cisco.com",
+    "status": "Short",
+    "need": "1",
+    "players": [
+      {
+        "name": "Santosh Ambli",
+        "email": "sambli@cisco.com"
+      },
+      {
+        "name": "Venu Deekonda",
+        "email": "vdeekond@cisco.com"
+      },
+      {
+        "name": "Arjun Rao N",
+        "email": "araon@cisco.com"
+      },
+      {
+        "name": "Jayesh Lohani",
+        "email": "jlohani@cisco.com"
+      },
+      {
+        "name": "Jishnu Jishnu",
+        "email": "jjishnu@cisco.com"
+      },
+      {
+        "name": "Bhavana Chimbili",
+        "email": "bhchimbi@cisco.com"
+      },
+      {
+        "name": "Ambareeshkumar Kumarasamy",
+        "email": "ambakuma@cisco.com"
+      },
+      {
+        "name": "Manoj Kolanukuduru",
+        "email": "mkolanuk@cisco.com"
+      },
+      {
+        "name": "Santhoshkumar Sivakumar",
+        "email": "santsiva@cisco.com"
+      },
+      {
+        "name": "Koushik Hegde",
+        "email": "kouhegde@cisco.com"
+      },
+      {
+        "name": "Ravi",
+        "email": "ravicra2@cisco.com"
+      },
+      {
+        "name": "Abhiram",
+        "email": "abvallur@cisco.com"
+      },
+      {
+        "name": "Mansi tyagi",
+        "email": "manstyag@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Cloud Chorus XI",
+    "shortName": "CC",
+    "captain": "Subrajit Dhal",
+    "captainEmail": "subdhal@cisco.com",
+    "status": "Short",
+    "need": "1",
+    "players": [
+      {
+        "name": "Hariprasad Navilur N",
+        "email": "hnavilur@cisco.com"
+      },
+      {
+        "name": "Subrajit Dhal",
+        "email": "subdhal@cisco.com"
+      },
+      {
+        "name": "Suchendra S",
+        "email": "ssadiga@cisco.com"
+      },
+      {
+        "name": "Mahesh Sivarama Pillai",
+        "email": "mahpilla@cisco.com"
+      },
+      {
+        "name": "Anand Bellad",
+        "email": "abellad@cisco.com"
+      },
+      {
+        "name": "Raghu BA",
+        "email": "ragba@cisco.com"
+      },
+      {
+        "name": "Sivakumaran S R",
+        "email": "siramana@cisco.com"
+      },
+      {
+        "name": "Gagana G S",
+        "email": "gags@cisco.com"
+      },
+      {
+        "name": "Anil Sequeira",
+        "email": "ansequei@cisco.com"
+      },
+      {
+        "name": "kamal Bhattad",
+        "email": "kbhattad@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Sixco CC XI",
+    "shortName": "SC",
+    "captain": "Mohanasundaram Kathirvel",
+    "captainEmail": "mokathir@cisco.com",
+    "status": "Short",
+    "need": "1",
+    "players": [
+      {
+        "name": "Mohanasundaram Kathirvel",
+        "email": "mokathir@cisco.com"
+      },
+      {
+        "name": "Akshay Nimbal",
+        "email": "aknimbal@cisco.com"
+      },
+      {
+        "name": "Sebin Kannampuzha",
+        "email": "skannamp@cisco.com"
+      },
+      {
+        "name": "Rakesh Sekhar",
+        "email": "raksekha@cisco.com"
+      },
+      {
+        "name": "Manish Chowdhury",
+        "email": "manichow@cisco.com"
+      },
+      {
+        "name": "Shruthi Gopinath",
+        "email": "shrgopin@cisco.com"
+      },
+      {
+        "name": "Amit Shekhar",
+        "email": "amshekha@cisco.com"
+      },
+      {
+        "name": "Satish Dandu",
+        "email": "sdandu@cisco.com"
+      },
+      {
+        "name": "Parth Mangal",
+        "email": "pamangal@cisco.com"
+      },
+      {
+        "name": "Vishnu Mohanan",
+        "email": "vismohan@cisco.com"
+      },
+      {
+        "name": "Prasanna",
+        "email": null
+      }
+    ]
+  },
+  {
+    "name": "Play Bold XI",
+    "shortName": "PB",
+    "captain": "Bhargava Sai Pasumarthy",
+    "captainEmail": "bhpasuma@cisco.com",
+    "status": "Short",
+    "need": "2",
+    "players": [
+      {
+        "name": "Prabhas Avvari",
+        "email": "pravvari@cisco.com"
+      },
+      {
+        "name": "Bhargava Sai Pasumarthy",
+        "email": "bhpasuma@cisco.com"
+      },
+      {
+        "name": "Vintha Vivekananda",
+        "email": "vinvivek@cisco.com"
+      },
+      {
+        "name": "Kranthi Gorichitti",
+        "email": "kgorichi@cisco.com"
+      },
+      {
+        "name": "Sujith Reddy Sama",
+        "email": "susama@cisco.com"
+      },
+      {
+        "name": "Gangadhar Madupu",
+        "email": "gmadupu@cisco.com"
+      },
+      {
+        "name": "Unni Suresh Kumar",
+        "email": "unni@cisco.com"
+      },
+      {
+        "name": "Kartheek Thumula",
+        "email": "kathumul@cisco.com"
+      },
+      {
+        "name": "Harsha Vardhan Pochammala",
+        "email": "hpochamm@cisco.com"
+      },
+      {
+        "name": "PRATEEK PATRO",
+        "email": "pratpatr@cisco.com"
+      },
+      {
+        "name": "Sanchit Bhat",
+        "email": "sancbhat@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Data Warriors",
+    "shortName": "DW",
+    "captain": "Praveen Tiwari",
+    "captainEmail": "praveeti@cisco.com",
+    "status": "Short",
+    "need": "2",
+    "players": [
+      {
+        "name": "Praveen Tiwari",
+        "email": "praveeti@cisco.com"
+      },
+      {
+        "name": "Basavaprasad Chandu",
+        "email": "bchandu@cisco.com"
+      },
+      {
+        "name": "Supratik Biswas",
+        "email": "supbiswa@cisco.com"
+      },
+      {
+        "name": "Saawan CN",
+        "email": "sacn@cisco.com"
+      },
+      {
+        "name": "Kunal Jaiswal",
+        "email": "kunjaisw@cisco.com"
+      },
+      {
+        "name": "Shailesh Singh",
+        "email": "shailesi@cisco.com"
+      },
+      {
+        "name": "Shreesha Poojary",
+        "email": "shrepooj@cisco.com"
+      },
+      {
+        "name": "Vijay Kumar",
+        "email": "vkumark3@cisco.com"
+      },
+      {
+        "name": "Avinash Satrasala",
+        "email": "avsatras@cisco.com"
+      },
+      {
+        "name": "Nikhil",
+        "email": "nmunigel@cisco.com"
+      },
+      {
+        "name": "Mukunda",
+        "email": "muannam@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Sixco SuperStrikers",
+    "shortName": "SS",
+    "captain": "Sudhir Singh",
+    "captainEmail": "sudhsin2@cisco.com",
+    "status": "Short",
+    "need": "2",
+    "players": [
+      {
+        "name": "Sudhir Singh",
+        "email": "sudhsin2@cisco.com"
+      },
+      {
+        "name": "Anurodh Jain",
+        "email": "anurjain@cisco.com"
+      },
+      {
+        "name": "Hrishabh Raj",
+        "email": "hriraj@cisco.com"
+      },
+      {
+        "name": "Sharmistha Parui",
+        "email": "shparui@cisco.com"
+      },
+      {
+        "name": "Mehul Poddar",
+        "email": "mepoddar@cisco.com"
+      },
+      {
+        "name": "Chaitanya Mulukutla Venkata",
+        "email": "chaitum@cisco.com"
+      },
+      {
+        "name": "Akshay G",
+        "email": "akgurupr@cisco.com"
+      },
+      {
+        "name": "Ajay Patchigolla",
+        "email": "apatchig@cisco.com"
+      },
+      {
+        "name": "Shashwat Sinha",
+        "email": "shasinh2@cisco.com"
+      },
+      {
+        "name": "Nagendra",
+        "email": null
+      },
+      {
+        "name": "Biswaroop",
+        "email": null
+      },
+      {
+        "name": "Manoj",
+        "email": null
+      }
+    ]
+  },
+  {
+    "name": "Rising Stars",
+    "shortName": "RS",
+    "captain": "Jayant Sipani",
+    "captainEmail": "jsipani@cisco.com",
+    "status": "Short",
+    "need": "4",
+    "players": [
+      {
+        "name": "Akshay Ambu",
+        "email": "aambu@cisco.com"
+      },
+      {
+        "name": "Jayant Sipani",
+        "email": "jsipani@cisco.com"
+      },
+      {
+        "name": "Venkata Sura Reddy Kovvuri",
+        "email": "venkovvu@cisco.com"
+      },
+      {
+        "name": "Sumukh Koushik",
+        "email": "sukoushi@cisco.com"
+      },
+      {
+        "name": "Venkata Sai Nagarjuna Singarapu",
+        "email": "venagarj@cisco.com"
+      },
+      {
+        "name": "Abhishek Avhad",
+        "email": "abavhad@cisco.com"
+      },
+      {
+        "name": "Krishna Kumar Balachandran",
+        "email": "kribalac@cisco.com"
+      },
+      {
+        "name": "Mohd Saifee",
+        "email": "ssaifee@cisco.com"
+      },
+      {
+        "name": "Danesh Gopal",
+        "email": "dagopal@cisco.com"
+      },
+      {
+        "name": "Raghuveer Mantri",
+        "email": "ragmantr@cisco.com"
+      },
+      {
+        "name": "Urmit Chauhan",
+        "email": "uchauhan@cisco.com"
+      },
+      {
+        "name": "Yashraj Samaiya",
+        "email": "ysamaiya@cisco.com"
+      },
+      {
+        "name": "CHEEMALA SRIKANTHA",
+        "email": "chesrika@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Royal Ciscoians Bengaluru RCB",
+    "shortName": "RCB",
+    "captain": "Nagarjun E",
+    "captainEmail": "enagarju@cisco.com",
+    "status": "Short",
+    "need": "5",
+    "players": [
+      {
+        "name": "Pratap Thokala",
+        "email": "prthokal@cisco.com"
+      },
+      {
+        "name": "Nagarjun E",
+        "email": "enagarju@cisco.com"
+      },
+      {
+        "name": "Shreya Pal",
+        "email": "palshrey@cisco.com"
+      },
+      {
+        "name": "Mithun Srinivas",
+        "email": "misriniv@cisco.com"
+      },
+      {
+        "name": "Neelabh Nagaich",
+        "email": "nnagaich@cisco.com"
+      },
+      {
+        "name": "Akshat Atray",
+        "email": "aatray@cisco.com"
+      },
+      {
+        "name": "Srivatsal",
+        "email": "srivsriv@cisco.com"
+      },
+      {
+        "name": "Venkata Raghavan A K",
+        "email": "veraghav@cisco.com"
+      },
+      {
+        "name": "Abhishek Mohan",
+        "email": "abmohan2@cisco.com"
+      },
+      {
+        "name": "Pavan Krishna Chaitanya Patnaikuni",
+        "email": "pachaita@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Collab Super Kings",
+    "shortName": "CSK",
+    "captain": "Praveen S",
+    "captainEmail": "Praveen S",
+    "status": "Short",
+    "need": "5",
+    "players": [
+      {
+        "name": "Balasubramaniyan Pandian",
+        "email": "bapandia@cisco.com"
+      },
+      {
+        "name": "Gopi Vasudevan",
+        "email": "govasude@cisco.com"
+      },
+      {
+        "name": "Vidya M",
+        "email": "vimanjun@cisco.com"
+      },
+      {
+        "name": "Chandra Ambati",
+        "email": "cambati@cisco.com"
+      },
+      {
+        "name": "Raghav Kumar Jha",
+        "email": "raghjha@cisco.com"
+      },
+      {
+        "name": "Dinesh Kumar S",
+        "email": "dishivas@cisco.com"
+      },
+      {
+        "name": "Praveen S",
+        "email": null
+      },
+      {
+        "name": "Ajay Prakash",
+        "email": null
+      },
+      {
+        "name": "Jibin",
+        "email": null
+      },
+      {
+        "name": "Phanindra",
+        "email": null
+      },
+      {
+        "name": "Raghu",
+        "email": null
+      },
+      {
+        "name": "Adithya",
+        "email": null
+      }
+    ]
+  },
+  {
+    "name": "Cisco Super Kings CSK",
+    "shortName": "CSK",
+    "captain": "Senthil Venkatan N",
+    "captainEmail": "sentn@cisco.com",
+    "status": "Short",
+    "need": "6",
+    "players": [
+      {
+        "name": "Muthukumar Mahadevan",
+        "email": "mutmahad@cisco.com"
+      },
+      {
+        "name": "Ajay Nag B J",
+        "email": "ajbj@cisco.com"
+      },
+      {
+        "name": "Ranadheer Chavan",
+        "email": "ranchava@cisco.com"
+      },
+      {
+        "name": "Dipendra Gogoi",
+        "email": "digogoi@cisco.com"
+      },
+      {
+        "name": "Senthil Venkatan N",
+        "email": "sentn@cisco.com"
+      },
+      {
+        "name": "Vipul Sharma",
+        "email": "vipusha2@cisco.com"
+      },
+      {
+        "name": "Panneer Selvam",
+        "email": "pannrama@cisco.com"
+      },
+      {
+        "name": "Shahinsha",
+        "email": "sshukkoo@cisco.com"
+      },
+      {
+        "name": "Prafulla",
+        "email": "prangari@cisco.com"
+      },
+      {
+        "name": "Kiran Kumar",
+        "email": "mkikumar@cisco.com"
+      },
+      {
+        "name": "Raseel",
+        "email": "rratnaka@cisco.com"
+      },
+      {
+        "name": "Thouffer",
+        "email": "thoar@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Hit and Run",
+    "shortName": "HAR",
+    "captain": "Alok Singh",
+    "captainEmail": "alsingh3@cisco.com",
+    "status": "Short",
+    "need": "3",
+    "players": [
+      {
+        "name": "Shashank Shekhar",
+        "email": "shasshe2@cisco.com"
+      },
+      {
+        "name": "Alok Singh",
+        "email": "alsingh3@cisco.com"
+      },
+      {
+        "name": "Basha Shaik",
+        "email": "bashshai@cisco.com"
+      },
+      {
+        "name": "Saurabh Singh Parmar",
+        "email": "saurparm@cisco.com"
+      },
+      {
+        "name": "Utshau Subba",
+        "email": "usubba@cisco.com"
+      },
+      {
+        "name": "Aditya Burli",
+        "email": "adburli@cisco.com"
+      },
+      {
+        "name": "Nihal Peediackal",
+        "email": "npeediac@cisco.com"
+      },
+      {
+        "name": "Anand Kalyanaraman",
+        "email": "ankalyan@cisco.com"
+      },
+      {
+        "name": "Yash Raj",
+        "email": "yasraj@cisco.com"
+      },
+      {
+        "name": "Kapil Jarikotkar",
+        "email": "kjarikot@cisco.com"
+      },
+      {
+        "name": "Vibhash Jain",
+        "email": "vibhajai@cisco.com"
+      },
+      {
+        "name": "Sanchit Bhat",
+        "email": "sancbhat@cisco.com"
+      }
+    ]
+  },
+  {
+    "name": "Lifecycle Cricket Team",
+    "shortName": "LCT",
+    "captain": "Shaik Mohiuddin",
+    "captainEmail": "",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Shaik Mohiuddin",
+        "email": null
+      },
+      {
+        "name": "Rajiv",
+        "email": null
+      },
+      {
+        "name": "Yuvraj",
+        "email": null
+      },
+      {
+        "name": "Ishan",
+        "email": null
+      },
+      {
+        "name": "Vineet",
+        "email": null
+      },
+      {
+        "name": "Krishna",
+        "email": null
+      },
+      {
+        "name": "Sinto",
+        "email": null
+      },
+      {
+        "name": "Koteswara",
+        "email": null
+      },
+      {
+        "name": "Bhupendra",
+        "email": null
+      },
+      {
+        "name": "Prabhu",
+        "email": null
+      },
+      {
+        "name": "Nithin",
+        "email": null
+      },
+      {
+        "name": "Vishal",
+        "email": null
+      },
+      {
+        "name": "Kiran",
+        "email": null
+      },
+      {
+        "name": "Subhajit",
+        "email": null
+      }
+    ]
+  },
+  {
+    "name": "Bengaluru Blasters",
+    "shortName": "BB",
+    "captain": "Venkata Sura Reddy Kovvuri",
+    "captainEmail": "venkovvu@cisco.com",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Paruchuri Kesav",
+        "email": "pkesav@cisco.com"
+      },
+      {
+        "name": "Venkatesh Mediboina",
+        "email": "vmediboi@cisco.com"
+      },
+      {
+        "name": "Ajay Kumar Kampli",
+        "email": "akumark7@cisco.com"
+      },
+      {
+        "name": "Venkata Sura Reddy Kovvuri",
+        "email": "venkovvu@cisco.com"
+      },
+      {
+        "name": "Ramprasad Uduse Motegowda",
+        "email": "ramum@cisco.com"
+      },
+      {
+        "name": "Sumanth",
+        "email": "sumants@cisco.com"
+      },
+      {
+        "name": "Sandeep kumar R",
+        "email": "sandr@cisco.com"
+      },
+      {
+        "name": "Sathiya Murugan",
+        "email": "sathiyam@cisco.com"
+      },
+      {
+        "name": "Munivara Achari Kammara",
+        "email": "mkammara@cisco.com"
+      },
+      {
+        "name": "Yogesh Gadekar",
+        "email": "ykachrug@cisco.com"
+      },
+      {
+        "name": "Perugu Mahendra",
+        "email": "pemahend@cisco.com"
+      },
+      {
+        "name": "Suresh Swamyappan",
+        "email": "sswamyap@cisco.com"
+      },
+      {
+        "name": "Rajinish",
+        "email": "rajnikus@cisco.com."
+      }
+    ]
+  },
+  {
+    "name": "11 Daulath's",
+    "shortName": "1D",
+    "captain": "Rajiv Shankar Daulat",
+    "captainEmail": "Rajiv Shankar Daulat",
+    "status": "Confirmed",
+    "need": "OK",
+    "players": [
+      {
+        "name": "Raghavendra Kulala",
+        "email": null
+      },
+      {
+        "name": "Dinesh Kumar",
+        "email": null
+      },
+      {
+        "name": "Iyer Venkataraman Vaidyanathan",
+        "email": null
+      },
+      {
+        "name": "Sudheendra",
+        "email": null
+      },
+      {
+        "name": "Dhaanish",
+        "email": null
+      },
+      {
+        "name": "Hemanth Kumar BM",
+        "email": null
+      },
+      {
+        "name": "Prasanta Narah",
+        "email": null
+      },
+      {
+        "name": "Akshaya Shetty",
+        "email": null
+      },
+      {
+        "name": "Kuldeep Sing",
+        "email": null
+      },
+      {
+        "name": "Rajiv Shankar Daulat",
+        "email": null
+      },
+      {
+        "name": "Pushpalatha Srinivas",
+        "email": null
+      },
+      {
+        "name": "Ankit Singh",
+        "email": "ankisin4@cisco.com"
+      },
+      {
+        "name": "Sai Pradeep Kuncha",
+        "email": "sakuncha@cisco.com"
+      }
+    ]
+  }
+]

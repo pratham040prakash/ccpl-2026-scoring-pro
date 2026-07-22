@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(148, 163, 184, 0.2);
+  --primary: #0066cc;
+  --primary-dark: #004999;
+  --accent: #ff6b00;
+  --accent-gold: #ffd700;
+  --muted: #64748b;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --glass: rgba(255, 255, 255, 0.08);
+}
+
+.dark {
+  --background: #030712;
+  --foreground: #f8fafc;
+  --card: rgba(15, 23, 42, 0.75);
+  --card-border: rgba(148, 163, 184, 0.15);
+  --glass: rgba(255, 255, 255, 0.05);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.glass-card {
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #0066cc 0%, #004999 40%, #ff6b00 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #0066cc, #ff6b00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.score-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.score-btn:active {
+  transform: scale(0.95);
+}
+
+.score-btn-primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.score-btn-run {
+  background: #059669;
+  color: white;
+}
+
+.score-btn-wicket {
+  background: #dc2626;
+  color: white;
+}
+
+.score-btn-extra {
+  background: #d97706;
+  color: white;
+}
+
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: rgb(226 232 240);
+  border-radius: 0.25rem;
+}
+
+.dark .skeleton {
+  background: rgb(30 41 59);
+}
+
+@media (max-width: 640px) {
+  .mobile-scorer-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+}
