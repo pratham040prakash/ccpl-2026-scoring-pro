@@ -3,6 +3,8 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { buildSeedData } from "@/lib/seed";
 
+export const runtime = "nodejs";
+
 export async function POST() {
   if (!isFirebaseConfigured()) {
     const data = buildSeedData();

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { getFirebaseAdminApp, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { isAdminEmail } from "@/lib/auth/admin-emails";
+
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   if (!isFirebaseAdminConfigured()) {
@@ -20,13 +22,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const app = getFirebaseAdminApp();
-    if (!app) throw new Error("Admin app unavailable");
+    const auth = getFirebaseAdminAuth();
+    const db = getFirebaseAdminDb();
+    if (!auth || !db) throw new Error("Admin SDK unavailable");
 
-    const { getAuth } = await import("firebase-admin/auth");
-    const { getFirestore } = await import("firebase-admin/firestore");
-
-    const decoded = await getAuth(app).verifyIdToken(token);
+    const decoded = await auth.verifyIdToken(token);
     const email = decoded.email;
 
     if (!isAdminEmail(email)) {
@@ -39,7 +39,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const db = getFirestore(app);
     const userRef = db.collection("users").doc(decoded.uid);
     const snap = await userRef.get();
     const now = new Date().toISOString();
