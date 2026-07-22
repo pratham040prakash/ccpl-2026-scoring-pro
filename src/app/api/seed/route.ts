@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { buildSeedData } from "@/lib/seed";
 
 export async function POST() {
@@ -16,26 +17,39 @@ export async function POST() {
     });
   }
 
+  if (!isFirebaseAdminConfigured()) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          "Firebase is configured but FIREBASE_SERVICE_ACCOUNT_JSON is missing. Add service account JSON to .env.local (see docs/FIREBASE_SETUP.md).",
+      },
+      { status: 400 }
+    );
+  }
+
   try {
-    const { getFirebaseDb } = await import("@/lib/firebase/config");
-    const { doc, setDoc, writeBatch, collection } = await import("firebase/firestore");
+    const db = getFirebaseAdminDb();
+    if (!db) {
+      throw new Error("Failed to initialize Firebase Admin SDK");
+    }
+
     const data = buildSeedData();
-    const db = getFirebaseDb();
-    const batch = writeBatch(db);
+    const batch = db.batch();
 
     for (const team of data.teams) {
-      batch.set(doc(db, "teams", team.id), team);
+      batch.set(db.collection("teams").doc(team.id), team);
     }
     for (const player of data.players) {
-      batch.set(doc(db, "players", player.id), player);
+      batch.set(db.collection("players").doc(player.id), player);
     }
     for (const fixture of data.fixtures) {
-      batch.set(doc(db, "fixtures", fixture.id), fixture);
+      batch.set(db.collection("fixtures").doc(fixture.id), fixture);
     }
     for (const ann of data.announcements) {
-      batch.set(doc(db, "announcements", ann.id), ann);
+      batch.set(db.collection("announcements").doc(ann.id), ann);
     }
-    batch.set(doc(db, "settings", "tournament"), data.settings);
+    batch.set(db.collection("settings").doc("tournament"), data.settings);
 
     await batch.commit();
 

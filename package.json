@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "firebase:deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "firebase:deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "firebase:setup-check": "node scripts/firebase-setup-check.mjs",
     "firebase:deploy": "npm run build && firebase deploy",
     "seed": "curl -X POST http://localhost:3000/api/seed",
     "import:teams": "python3 scripts/import-teams-from-xlsx.py"
@@ -19,6 +20,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.16.0",
+    "firebase-admin": "^14.2.0",
     "framer-motion": "^12.42.2",
     "idb": "^8.0.3",
     "jspdf": "^4.2.1",

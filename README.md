@@ -36,6 +36,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Without Firebase configured, the app runs in **demo mode** with preloaded CCPL 2026 teams and fixtures.
 
+## Host from GitHub (Vercel)
+
+1. Push repo to GitHub: [pratham040prakash/ccpl-2026-scoring-pro](https://github.com/pratham040prakash/ccpl-2026-scoring-pro)
+2. [vercel.com](https://vercel.com) → **Import Project** → select the repo → **Deploy**
+3. Add Firebase env vars in Vercel (optional for demo mode)
+
+Full guide: [docs/HOSTING.md](docs/HOSTING.md) · Firebase: [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md)
+
 ## Seed Database
 
 1. Configure Firebase in `.env.local`
