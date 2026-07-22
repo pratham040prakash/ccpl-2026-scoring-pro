@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useFixtures } from "@/hooks/use-tournament-data";
-import { Play, Smartphone, Tv } from "lucide-react";
+import { Play, Smartphone, Tv, ExternalLink } from "lucide-react";
+
+const LIVE_SCORER_URL = "https://cricketscore.in.net/";
 
 export default function AdminMatchesPage() {
   const { data: fixtures = [] } = useFixtures();
@@ -22,6 +24,14 @@ export default function AdminMatchesPage() {
               <p className="text-sm text-slate-500">{f.date} · {f.startTime} · {f.overs} overs</p>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <a
+                href={LIVE_SCORER_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium"
+              >
+                <ExternalLink className="w-4 h-4" /> Live Counter
+              </a>
               <Link
                 href={`/match/${f.id}/score/mobile`}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium"

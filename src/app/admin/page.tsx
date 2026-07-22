@@ -128,7 +128,7 @@ export default function AdminPage() {
       title: "Scores & Results",
       icon: Trophy,
       items: [
-        { label: "Update Scores (CSV / Photo / Manual)", href: "/admin/scores", count: Object.keys(scores).length },
+        { label: "Live Scoring & Results", href: "/admin/scores", count: Object.keys(scores).length },
       ],
     },
     {

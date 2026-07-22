@@ -40,7 +40,7 @@ export default function AdminScoresPage() {
         <ArrowLeft className="w-4 h-4" /> Back to Admin
       </Link>
       <h1 className="text-3xl font-black mb-2">Update Scores</h1>
-      <p className="text-slate-500 mb-8">CSV import, scorecard photo, or manual entry</p>
+      <p className="text-slate-500 mb-8">Live scoring via cricketscore.in.net, then CSV, photo, or manual entry</p>
       <ScoreUpdatePanel />
     </div>
   );

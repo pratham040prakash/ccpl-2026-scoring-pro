@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Upload, FileSpreadsheet, ImageIcon, PenLine, Download, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileSpreadsheet, ImageIcon, PenLine, Download, CheckCircle, AlertCircle, Radio } from "lucide-react";
+import { LiveScoringPanel } from "@/components/admin/live-scoring-panel";
 import { useFixtures } from "@/hooks/use-tournament-data";
 import { useMatchResults } from "@/providers/match-results-provider";
 import {
@@ -14,15 +15,16 @@ import type { Fixture } from "@/types";
 import type { ParsedScoreImage } from "@/types/scores";
 import { cn } from "@/lib/utils";
 
-type Tab = "csv" | "image" | "manual";
+type Tab = "live" | "csv" | "image" | "manual";
 
 export function ScoreUpdatePanel() {
-  const [tab, setTab] = useState<Tab>("manual");
+  const [tab, setTab] = useState<Tab>("live");
   const { data: fixtures = [] } = useFixtures();
   const { scores, applyScore, applyBulkScores, removeScore } = useMatchResults();
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const tabs: { id: Tab; label: string; icon: typeof Upload }[] = [
+    { id: "live", label: "Live Scoring", icon: Radio },
     { id: "csv", label: "Upload CSV", icon: FileSpreadsheet },
     { id: "image", label: "Upload Score Pic", icon: ImageIcon },
     { id: "manual", label: "Manual Entry", icon: PenLine },
@@ -66,6 +68,7 @@ export function ScoreUpdatePanel() {
         </div>
       )}
 
+      {tab === "live" && <LiveScoringPanel fixtures={fixtures} compact />}
       {tab === "csv" && (
         <CsvUploadTab
           fixtures={fixtures}
