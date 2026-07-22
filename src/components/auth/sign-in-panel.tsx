@@ -32,11 +32,44 @@ export function SignInPanel({
   return (
     <div className={cn("space-y-4 text-left", className)}>
       {isDemo && showDemoHint && (
-        <div className="p-4 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/20 text-sm">
-          <p className="font-semibold mb-1">Firebase not configured</p>
-          <p>
-            Add <code className="text-xs bg-black/10 px-1 rounded">NEXT_PUBLIC_FIREBASE_*</code> env vars in
-            Vercel, then redeploy to enable sign-in.
+        <div className="p-4 rounded-xl bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/20 text-sm space-y-2">
+          <p className="font-semibold">Firebase not configured on this deployment</p>
+          <p>Sign-in is disabled until Firebase env vars are added in Vercel and the site is redeployed.</p>
+          <ol className="list-decimal list-inside space-y-1 text-xs">
+            <li>
+              Create a project in{" "}
+              <a
+                href="https://console.firebase.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium"
+              >
+                Firebase Console
+              </a>{" "}
+              → Project settings → Web app → copy config values
+            </li>
+            <li>
+              Add env vars in{" "}
+              <a
+                href="https://vercel.com/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-medium"
+              >
+                Vercel → Settings → Environment Variables
+              </a>
+            </li>
+            <li>Redeploy (Deployments → Redeploy latest)</li>
+            <li>
+              Firebase → Authentication → enable Email/Password → Add user{" "}
+              <strong>sppratham@gmail.com</strong>
+            </li>
+          </ol>
+          <p className="text-xs opacity-90">
+            Required vars:{" "}
+            <code className="bg-black/10 px-1 rounded">NEXT_PUBLIC_FIREBASE_API_KEY</code>,{" "}
+            <code className="bg-black/10 px-1 rounded">NEXT_PUBLIC_FIREBASE_PROJECT_ID</code>, and 4 more — see{" "}
+            <code className="bg-black/10 px-1 rounded">docs/FIREBASE_SETUP.md</code>
           </p>
         </div>
       )}
