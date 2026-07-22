@@ -4,17 +4,24 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export default function AdminScoresPage() {
-  const { profile, hasRole, signInWithGoogle } = useAuth();
+  const { profile, hasRole, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center text-slate-500">
+        Checking sign-in status…
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <p className="text-slate-500 mb-4">Sign in to update scores</p>
-        <button onClick={() => signInWithGoogle()} className="px-6 py-3 rounded-xl bg-primary text-white">
-          Sign in
-        </button>
+        <GoogleSignInButton label="Sign in" />
       </div>
     );
   }

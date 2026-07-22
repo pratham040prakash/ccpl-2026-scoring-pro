@@ -17,14 +17,23 @@ import { useAuth } from "@/providers/auth-provider";
 import { useFixtures, useTeams } from "@/hooks/use-tournament-data";
 import { useMatchResults } from "@/providers/match-results-provider";
 import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export default function AdminPage() {
-  const { profile, hasRole, signInWithGoogle, isDemo, isProduction } = useAuth();
+  const { profile, hasRole, loading, isDemo, isProduction } = useAuth();
   const { data: teams = [] } = useTeams();
   const { data: fixtures = [] } = useFixtures();
   const { scores } = useMatchResults();
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState("");
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-20 text-center text-slate-500">
+        Checking sign-in status…
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -32,12 +41,7 @@ export default function AdminPage() {
         <Shield className="w-16 h-16 mx-auto text-primary mb-4" />
         <h1 className="text-2xl font-bold mb-2">Admin Access Required</h1>
         <p className="text-slate-500 mb-6">Sign in with Google to access the admin panel</p>
-        <button
-          onClick={() => signInWithGoogle()}
-          className="px-6 py-3 rounded-xl bg-primary text-white font-semibold"
-        >
-          Sign in with Google
-        </button>
+        <GoogleSignInButton />
       </div>
     );
   }

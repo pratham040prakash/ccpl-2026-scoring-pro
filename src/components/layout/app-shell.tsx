@@ -12,7 +12,6 @@ import {
   Moon,
   Menu,
   X,
-  LogIn,
   LogOut,
   Tv,
   Smartphone,
@@ -20,6 +19,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { useTheme } from "@/providers/theme-provider";
 
 const NAV = [
@@ -33,7 +33,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { profile, signInWithGoogle, signOut, hasRole } = useAuth();
+  const { profile, signOut, hasRole, isDemo } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -108,13 +108,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Sign out
               </button>
             ) : (
-              <button
-                onClick={() => signInWithGoogle()}
-                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-primary text-white hover:brightness-110"
-              >
-                <LogIn className="w-4 h-4" />
-                Sign in
-              </button>
+              !isDemo && (
+                <div className="hidden sm:block">
+                  <GoogleSignInButton
+                    label="Sign in"
+                    showDemoHint={false}
+                    className="px-3 py-2 rounded-lg text-sm font-medium"
+                  />
+                </div>
+              )
             )}
 
             <button
@@ -144,13 +146,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/admin" onClick={() => setMenuOpen(false)} className="px-4 py-3 rounded-lg">
               Admin
             </Link>
-            {!profile && (
-              <button
-                onClick={() => { signInWithGoogle(); setMenuOpen(false); }}
-                className="mx-4 mt-2 py-3 rounded-lg bg-primary text-white font-medium"
-              >
-                Sign in with Google
-              </button>
+            {!profile && !isDemo && (
+              <div className="mx-4 mt-2">
+                <GoogleSignInButton showDemoHint={false} />
+              </div>
             )}
           </nav>
         )}
