@@ -21,7 +21,7 @@ export function formatAuthError(error: unknown): string {
     case "auth/too-many-requests":
       return "Too many failed attempts. Wait a few minutes and try again.";
     case "auth/invalid-api-key":
-      return "Invalid Firebase API key. Check NEXT_PUBLIC_FIREBASE_* env vars and redeploy.";
+      return "Invalid Firebase API key. In Vercel, set NEXT_PUBLIC_FIREBASE_API_KEY to the apiKey from Firebase Console → Project settings → Your apps → Web app (project: scoring-app-dbff0). Then redeploy.";
     default:
       return message || "Sign-in failed. Please try again.";
   }

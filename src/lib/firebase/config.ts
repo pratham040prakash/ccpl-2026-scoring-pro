@@ -48,8 +48,9 @@ export function getFirebaseStorage(): FirebaseStorage {
 }
 
 export function isFirebaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-  );
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
+  const placeholders = ["PASTE_FROM", "your_api_key", "your-project", "AIza..."];
+  const looksLikePlaceholder = placeholders.some((p) => apiKey.includes(p) || projectId.includes(p));
+  return Boolean(apiKey && projectId && !looksLikePlaceholder);
 }
