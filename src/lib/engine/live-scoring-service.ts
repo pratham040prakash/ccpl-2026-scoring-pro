@@ -205,6 +205,8 @@ export async function applyScoringAction(
 
   const matchComplete =
     result.completeInnings && innings.inningsNumber === 2;
+
+  const updatedInnings: Innings = {
     ...updatedPartial,
     ...metrics,
     strikerId,

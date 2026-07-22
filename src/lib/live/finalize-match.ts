@@ -1,6 +1,6 @@
 import type { StoredMatchScore } from "@/types/scores";
-import { loadStoredScores, saveStoredScores } from "./store";
-import type { Fixture, Innings, Match } from "@/types";
+import { loadStoredScores, saveStoredScores } from "@/lib/scores/store";
+import type { Innings, Match } from "@/types";
 import { buildStoredScoreFromLive } from "@/lib/engine/match-finalization";
 
 export function syncLiveResultToLocalStorage(

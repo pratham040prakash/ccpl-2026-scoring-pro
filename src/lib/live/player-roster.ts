@@ -17,7 +17,7 @@ export function getTeamRoster(teamName: string): RosterPlayer[] {
   return team.players.map((p) => ({
     id: playerId(team.name, p.name),
     name: p.name,
-    email: p.email,
+    email: p.email ?? undefined,
   }));
 }
 
