@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { use } from "react";
 import { ArrowLeft } from "lucide-react";
 import { DEMO_DATA } from "@/lib/seed";
+import { PageContainer } from "@/components/layout/page-container";
 import { generatePlayerInsight } from "@/lib/engine/ai";
 
 export default function PlayerPage({
@@ -27,14 +28,14 @@ export default function PlayerPage({
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <Link href={`/teams/${player.teamId}`} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6">
+    <PageContainer size="md">
+      <Link href={`/teams/${player.teamId}`} className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6 min-h-[44px]">
         <ArrowLeft className="w-4 h-4" /> Back to {team?.name}
       </Link>
 
-      <div className="glass-card p-8 mb-8">
-        <div className="flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full gradient-hero flex items-center justify-center text-white text-3xl font-black">
+      <div className="glass-card p-6 sm:p-8 mb-8">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+          <div className="w-24 h-24 rounded-full gradient-hero flex items-center justify-center text-white text-3xl font-black shrink-0">
             {player.name.charAt(0)}
           </div>
           <div>
@@ -47,7 +48,7 @@ export default function PlayerPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8 overflow-x-auto sm:overflow-visible">
         {[
           { label: "Runs", value: player.stats.runs },
           { label: "Balls", value: player.stats.balls },
@@ -69,6 +70,6 @@ export default function PlayerPage({
         <h2 className="font-bold mb-3">AI Player Insights</h2>
         <p className="text-slate-600 dark:text-slate-400">{insight}</p>
       </div>
-    </div>
+    </PageContainer>
   );
 }

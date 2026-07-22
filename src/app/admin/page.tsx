@@ -17,6 +17,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useFixtures, useTeams } from "@/hooks/use-tournament-data";
 import { useMatchResults } from "@/providers/match-results-provider";
 import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
 
 export default function AdminPage() {
@@ -155,23 +156,27 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black">Admin Panel</h1>
-          <p className="text-slate-500">
-            Welcome, {profile.displayName} · {profile.role}
-            {isProduction && " · Production"}
-            {isDemo && " · Demo Mode (add Firebase env vars)"}
-          </p>
-        </div>
-        <Link
-          href="/admin/matches"
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-semibold hover:brightness-110"
-        >
-          <Play className="w-5 h-5" /> Start Match
-        </Link>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Admin Panel"
+        subtitle={`Welcome, ${profile.displayName} · ${profile.role}${isProduction ? " · Production" : ""}${isDemo ? " · Demo Mode (add Firebase env vars)" : ""}`}
+        actions={
+          <Link
+            href="/admin/matches"
+            className="hidden sm:flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-semibold hover:brightness-110 min-h-[44px]"
+          >
+            <Play className="w-5 h-5" /> Start Match
+          </Link>
+        }
+      />
+
+      <Link
+        href="/admin/matches"
+        className="sm:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex items-center gap-2 px-5 py-4 rounded-full bg-primary text-white font-bold shadow-xl min-h-[56px]"
+        aria-label="Start match"
+      >
+        <Play className="w-5 h-5" /> Start Match
+      </Link>
 
       {seedResult && (
         <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -179,7 +184,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {adminSections.map(({ title, icon: Icon, items }) => (
           <div key={title} className="glass-card p-6">
             <h2 className="font-bold flex items-center gap-2 mb-4">
@@ -237,6 +242,6 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

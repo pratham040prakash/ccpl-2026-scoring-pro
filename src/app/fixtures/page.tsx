@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FixtureList } from "@/components/dashboard/fixture-card";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useFixtures } from "@/hooks/use-tournament-data";
 
 const STAGES = [
@@ -31,11 +32,11 @@ export default function FixturesPage() {
   }, [fixtures, filter, search]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-black mb-2">Fixtures</h1>
-      <p className="text-slate-500 mb-8">
-        CCPL 2026 final schedule — 18 matches · Mon 27 → Thu 30 Jul 2026
-      </p>
+    <PageContainer>
+      <PageHeader
+        title="Fixtures"
+        subtitle="CCPL 2026 final schedule — 18 matches · Mon 27 → Thu 30 Jul 2026"
+      />
 
       <div className="flex flex-col sm:flex-row gap-4 mb-8">
         <input
@@ -43,14 +44,15 @@ export default function FixturesPage() {
           placeholder="Search teams or match ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-3 rounded-xl glass-card border border-slate-200/20 bg-transparent"
+          className="flex-1 px-4 py-3 rounded-xl glass-card border border-slate-200/20 bg-transparent min-h-[48px]"
         />
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap sm:overflow-visible">
           {STAGES.map(({ id, label }) => (
             <button
               key={id}
+              type="button"
               onClick={() => setFilter(id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium min-h-[44px] ${
                 filter === id ? "bg-primary text-white" : "glass-card hover:bg-slate-100 dark:hover:bg-slate-800"
               }`}
             >
@@ -69,6 +71,6 @@ export default function FixturesPage() {
       ) : (
         <FixtureList fixtures={filtered} title={`${filtered.length} Matches`} />
       )}
-    </div>
+    </PageContainer>
   );
 }

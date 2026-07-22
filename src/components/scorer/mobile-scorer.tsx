@@ -61,7 +61,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
                   disabled={disabled}
                   onClick={() => handleRun(runs)}
                   className={cn(
-                    "h-20 sm:h-24 rounded-2xl text-2xl sm:text-3xl font-black disabled:opacity-50",
+                    "min-h-[56px] h-20 sm:h-24 rounded-2xl text-2xl sm:text-3xl font-black disabled:opacity-50",
                     runs === 0
                       ? "bg-slate-700"
                       : runs === 4
@@ -81,7 +81,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
                 whileTap={{ scale: 0.95 }}
                 disabled={disabled}
                 onClick={() => onScore({ type: "wide" })}
-                className="score-btn-extra h-16 rounded-2xl text-lg font-bold"
+                className="score-btn-extra min-h-[56px] h-16 rounded-2xl text-lg font-bold"
               >
                 Wide
               </motion.button>
@@ -89,7 +89,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
                 whileTap={{ scale: 0.95 }}
                 disabled={disabled}
                 onClick={() => onScore({ type: "no_ball" })}
-                className="score-btn-extra h-16 rounded-2xl text-lg font-bold"
+                className="score-btn-extra min-h-[56px] h-16 rounded-2xl text-lg font-bold"
               >
                 No Ball
               </motion.button>
@@ -97,7 +97,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
                 whileTap={{ scale: 0.95 }}
                 disabled={disabled}
                 onClick={() => onScore({ type: "bye", runs: 1 })}
-                className="h-16 rounded-2xl bg-slate-700 font-bold"
+                className="min-h-[56px] h-16 rounded-2xl bg-slate-700 font-bold"
               >
                 Bye
               </motion.button>
@@ -105,7 +105,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
                 whileTap={{ scale: 0.95 }}
                 disabled={disabled}
                 onClick={() => onScore({ type: "leg_bye", runs: 1 })}
-                className="h-16 rounded-2xl bg-slate-700 font-bold"
+                className="min-h-[56px] h-16 rounded-2xl bg-slate-700 font-bold"
               >
                 Leg Bye
               </motion.button>
@@ -115,7 +115,7 @@ export function MobileScorer({ onScore, onUndo, disabled, currentOver }: MobileS
               whileTap={{ scale: 0.95 }}
               disabled={disabled}
               onClick={() => setWicketMode(true)}
-              className="w-full score-btn-wicket h-20 rounded-2xl text-xl font-black mb-4"
+              className="w-full score-btn-wicket min-h-[56px] h-20 rounded-2xl text-xl font-black mb-4"
             >
               WICKET
             </motion.button>

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Search, Users } from "lucide-react";
 import { useTeams } from "@/hooks/use-tournament-data";
 import { DEMO_DATA } from "@/lib/seed";
+import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import teamsData from "@/data/teams.json";
 
 export default function TeamsPage() {
@@ -21,9 +22,8 @@ export default function TeamsPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-black mb-2">Teams</h1>
-      <p className="text-slate-500 mb-8">{teams.length} teams registered for CCPL 2026</p>
+    <PageContainer>
+      <PageHeader title="Teams" subtitle={`${teams.length} teams registered for CCPL 2026`} />
 
       <div className="relative mb-8 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -37,13 +37,13 @@ export default function TeamsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="skeleton h-40 rounded-xl" />
           ))}
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((team) => {
             const captain = DEMO_DATA.players.find((p) => p.id === team.captainId);
             const seedTeam = (teamsData as { name: string; status?: string; need?: string }[]).find(
@@ -95,6 +95,6 @@ export default function TeamsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -362,7 +362,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
                   handleScore(runs === 0 ? { type: "dot" } : { type: "runs", runs })
                 }
                 className={cn(
-                  "h-16 sm:h-20 rounded-2xl text-2xl font-black disabled:opacity-40",
+                  "min-h-[56px] h-16 sm:h-20 rounded-2xl text-2xl font-black disabled:opacity-40",
                   runs === 0 ? "bg-slate-700 text-white" :
                   runs === 4 ? "bg-blue-600 text-white" :
                   runs === 6 ? "bg-purple-600 text-white" :
@@ -381,7 +381,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
                 type="button"
                 disabled={busy}
                 onClick={() => setExtrasMode(ex)}
-                className="h-14 rounded-xl bg-amber-600/90 text-white font-bold capitalize"
+                className="min-h-[56px] h-14 rounded-xl bg-amber-600/90 text-white font-bold capitalize"
               >
                 {ex.replace("_", " ")}
               </button>
