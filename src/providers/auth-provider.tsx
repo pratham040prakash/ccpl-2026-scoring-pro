@@ -24,6 +24,7 @@ interface AuthContextValue {
   signInError: string | null;
   signInWithEmailPassword: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  retryAdminBootstrap: () => Promise<string | null>;
   signOut: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
   isDemo: boolean;
@@ -32,19 +33,21 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function bootstrapAdminIfAllowed(firebaseUser: User): Promise<UserRole | null> {
+async function bootstrapAdminIfAllowed(
+  firebaseUser: User
+): Promise<{ role: UserRole | null; message?: string }> {
   try {
     const token = await firebaseUser.getIdToken();
     const res = await fetch("/api/admin/bootstrap", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
-    const data = (await res.json()) as { success?: boolean; role?: UserRole };
-    if (data.success && data.role) return data.role;
+    const data = (await res.json()) as { success?: boolean; role?: UserRole; message?: string };
+    if (data.success && data.role) return { role: data.role };
+    return { role: null, message: data.message || `Bootstrap failed (${res.status})` };
   } catch {
-    // Non-fatal — user may not be in ADMIN_EMAILS
+    return { role: null, message: "Could not reach admin bootstrap API." };
   }
-  return null;
 }
 
 function profileFromAuthUser(firebaseUser: User, role: UserRole = "viewer"): UserProfile {
@@ -69,7 +72,7 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile> {
     }
 
     if (userProfile.role !== "administrator") {
-      const bootRole = await bootstrapAdminIfAllowed(firebaseUser);
+      const { role: bootRole } = await bootstrapAdminIfAllowed(firebaseUser);
       if (bootRole) {
         userProfile = { ...userProfile, role: bootRole };
       } else {
@@ -80,7 +83,7 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile> {
     return userProfile;
   } catch {
     let userProfile = profileFromAuthUser(firebaseUser);
-    const bootRole = await bootstrapAdminIfAllowed(firebaseUser);
+    const { role: bootRole } = await bootstrapAdminIfAllowed(firebaseUser);
     if (bootRole) userProfile = { ...userProfile, role: bootRole };
     return userProfile;
   }
@@ -197,6 +200,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const retryAdminBootstrap = async (): Promise<string | null> => {
+    const auth = getFirebaseAuth();
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return "Sign in first.";
+
+    const { role, message } = await bootstrapAdminIfAllowed(firebaseUser);
+    if (role) {
+      const refreshed = (await getUserProfile(firebaseUser.uid)) || profileFromAuthUser(firebaseUser, role);
+      setProfile({ ...refreshed, role });
+      return null;
+    }
+    return message || "Admin access was not granted.";
+  };
+
   const signOut = async () => {
     if (isDemo) return;
     await firebaseSignOut(getFirebaseAuth());
@@ -221,6 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInError,
         signInWithEmailPassword,
         signInWithGoogle,
+        retryAdminBootstrap,
         signOut,
         hasRole,
         isDemo,

@@ -20,12 +20,14 @@ import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
 
 export default function AdminPage() {
-  const { profile, hasRole, loading, isDemo, isProduction } = useAuth();
+  const { profile, hasRole, loading, isDemo, isProduction, retryAdminBootstrap, signOut } = useAuth();
   const { data: teams = [] } = useTeams();
   const { data: fixtures = [] } = useFixtures();
   const { scores } = useMatchResults();
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState("");
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   if (loading) {
     return (
@@ -47,15 +49,55 @@ export default function AdminPage() {
   }
 
   if (!hasRole("administrator", "scorer")) {
+    const handleRetry = async () => {
+      setRetrying(true);
+      setBootstrapError(null);
+      const err = await retryAdminBootstrap();
+      setBootstrapError(err);
+      setRetrying(false);
+    };
+
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <Lock className="w-16 h-16 mx-auto text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Insufficient Permissions</h1>
-        <p className="text-slate-500">
-          Your role is <strong>{profile.role}</strong>. Add your Google email to{" "}
-          <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">ADMIN_EMAILS</code> in
-          Vercel env vars, redeploy, then sign in again.
+        <p className="text-slate-500 mb-4">
+          Signed in as <strong>{profile.email}</strong> · role: <strong>{profile.role}</strong>
         </p>
+        <div className="text-left text-sm text-slate-500 space-y-2 mb-6 p-4 rounded-xl bg-slate-500/10 border border-slate-500/20">
+          <p className="font-semibold text-slate-700 dark:text-slate-200">Fix in Vercel → Environment Variables:</p>
+          <p>
+            <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">ADMIN_EMAILS</code> ={" "}
+            <strong>sppratham@gmail.com</strong>
+          </p>
+          <p>
+            <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">FIREBASE_SERVICE_ACCOUNT_JSON</code> = full JSON for{" "}
+            <strong>ccpl-2026-scoring-pro</strong> (same project as Firestore)
+          </p>
+          <p>Then redeploy, sign out, sign in again.</p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => void handleRetry()}
+            disabled={retrying}
+            className="px-6 py-3 rounded-xl bg-primary text-white font-semibold disabled:opacity-60"
+          >
+            {retrying ? "Checking admin access…" : "Retry admin access"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void signOut()}
+            className="px-6 py-3 rounded-xl border border-slate-200/30 font-medium"
+          >
+            Sign out and sign in again
+          </button>
+        </div>
+        {bootstrapError && (
+          <p className="mt-4 text-sm text-red-600 dark:text-red-400" role="alert">
+            {bootstrapError}
+          </p>
+        )}
       </div>
     );
   }
