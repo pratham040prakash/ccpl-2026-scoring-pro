@@ -22,11 +22,16 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() in ['administrator', 'captain'];
     }
 
-    // Users
+    // Users — users cannot change their own role (admin promotion via Admin SDK only)
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.role == 'viewer';
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId
+          && request.resource.data.role == resource.data.role)
+        || isAdmin()
+      );
       allow delete: if isAdmin();
     }
 

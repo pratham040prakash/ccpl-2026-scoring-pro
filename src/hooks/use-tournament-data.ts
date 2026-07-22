@@ -30,38 +30,6 @@ function emptyPointsTable() {
   }));
 }
 
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
-import { isFirebaseConfigured } from "@/lib/firebase/config";
-import {
-  getAnnouncements,
-  getFixtures,
-  getMatches,
-  getPointsTable as fetchPointsTableFromFirestore,
-  getSettings,
-  getTeams,
-} from "@/lib/firebase/firestore";
-import { DEMO_DATA } from "@/lib/seed";
-import { useMatchResults } from "@/providers/match-results-provider";
-
-function emptyPointsTable() {
-  return DEMO_DATA.teams.map((t, i) => ({
-    teamId: t.id,
-    teamName: t.name,
-    played: 0,
-    won: 0,
-    lost: 0,
-    tied: 0,
-    nr: 0,
-    points: 0,
-    runsFor: 0,
-    runsAgainst: 0,
-    nrr: 0,
-    rank: i + 1,
-  }));
-}
-
 export function useTeams() {
   return useQuery({
     queryKey: ["teams"],

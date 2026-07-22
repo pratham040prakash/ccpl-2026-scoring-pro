@@ -63,7 +63,13 @@ if (env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     ok = false;
   }
 } else {
-  console.log("⚠  FIREBASE_SERVICE_ACCOUNT_JSON — missing (required for /api/seed)");
+  console.log("⚠  FIREBASE_SERVICE_ACCOUNT_JSON — missing (required for seed + admin bootstrap)");
+}
+
+if (env.ADMIN_EMAILS && !env.ADMIN_EMAILS.includes("your-google")) {
+  console.log(`✓  ADMIN_EMAILS (${env.ADMIN_EMAILS.split(",").length} email(s))`);
+} else {
+  console.log("⚠  ADMIN_EMAILS — set your Google email for admin access");
 }
 
 if (existsSync(resolve(root, ".firebaserc"))) {

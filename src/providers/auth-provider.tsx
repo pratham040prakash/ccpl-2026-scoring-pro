@@ -20,28 +20,34 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
   isDemo: boolean;
+  isProduction: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const DEMO_PROFILE: UserProfile = {
-  uid: "demo-admin",
-  email: "demo@cisco.com",
-  displayName: "Demo Admin",
-  role: "administrator",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+async function bootstrapAdminIfAllowed(firebaseUser: User): Promise<void> {
+  try {
+    const token = await firebaseUser.getIdToken();
+    await fetch("/api/admin/bootstrap", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // Non-fatal — user may not be in ADMIN_EMAILS
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const isDemo = !isFirebaseConfigured();
+  const isProduction = isFirebaseConfigured();
+  const isDemo = !isProduction;
 
   useEffect(() => {
     if (isDemo) {
-      setProfile(DEMO_PROFILE);
+      setUser(null);
+      setProfile(null);
       setLoading(false);
       return;
     }
@@ -63,6 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           await upsertUserProfile(userProfile);
         }
+
+        if (userProfile.role !== "administrator") {
+          await bootstrapAdminIfAllowed(firebaseUser);
+          userProfile = (await getUserProfile(firebaseUser.uid)) || userProfile;
+        }
+
         setProfile(userProfile);
       } else {
         setProfile(null);
@@ -73,19 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (isDemo) {
-      setProfile(DEMO_PROFILE);
-      return;
+      throw new Error("Configure Firebase env vars for production sign-in.");
     }
     const provider = new GoogleAuthProvider();
     await signInWithPopup(getFirebaseAuth(), provider);
   };
 
   const signOut = async () => {
-    if (isDemo) {
-      setProfile(null);
-      return;
-    }
+    if (isDemo) return;
     await firebaseSignOut(getFirebaseAuth());
+    setProfile(null);
+    setUser(null);
   };
 
   const hasRole = (...roles: UserRole[]) => {
@@ -96,7 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, signInWithGoogle, signOut, hasRole, isDemo }}
+      value={{
+        user,
+        profile,
+        loading,
+        signInWithGoogle,
+        signOut,
+        hasRole,
+        isDemo,
+        isProduction,
+      }}
     >
       {children}
     </AuthContext.Provider>

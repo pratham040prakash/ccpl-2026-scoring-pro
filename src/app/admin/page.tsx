@@ -19,7 +19,7 @@ import { useMatchResults } from "@/providers/match-results-provider";
 import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
 
 export default function AdminPage() {
-  const { profile, hasRole, signInWithGoogle, isDemo } = useAuth();
+  const { profile, hasRole, signInWithGoogle, isDemo, isProduction } = useAuth();
   const { data: teams = [] } = useTeams();
   const { data: fixtures = [] } = useFixtures();
   const { scores } = useMatchResults();
@@ -47,7 +47,11 @@ export default function AdminPage() {
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <Lock className="w-16 h-16 mx-auto text-amber-500 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Insufficient Permissions</h1>
-        <p className="text-slate-500">Your role ({profile.role}) does not have admin access. Contact an administrator.</p>
+        <p className="text-slate-500">
+          Your role is <strong>{profile.role}</strong>. Add your Google email to{" "}
+          <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">ADMIN_EMAILS</code> in
+          Vercel env vars, redeploy, then sign in again.
+        </p>
       </div>
     );
   }
@@ -111,7 +115,8 @@ export default function AdminPage() {
           <h1 className="text-3xl font-black">Admin Panel</h1>
           <p className="text-slate-500">
             Welcome, {profile.displayName} · {profile.role}
-            {isDemo && " · Demo Mode"}
+            {isProduction && " · Production"}
+            {isDemo && " · Demo Mode (add Firebase env vars)"}
           </p>
         </div>
         <Link
