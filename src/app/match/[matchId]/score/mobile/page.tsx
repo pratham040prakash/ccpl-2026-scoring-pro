@@ -4,11 +4,19 @@ import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { MobileScorer } from "@/components/scorer/mobile-scorer";
-import { useFixtures } from "@/hooks/use-tournament-data";
-import type { Innings, Ball, ScoringAction } from "@/types";
-import { generateId, formatOvers } from "@/lib/utils";
-import { scoreBall, undoBall } from "@/lib/engine/scoring";
+import { useLiveMatch } from "@/hooks/use-live-match";
+import { useAuth } from "@/providers/auth-provider";
+import { formatOvers } from "@/lib/utils";
+import {
+  applyScoringAction,
+  type ScoringContext,
+} from "@/lib/engine/live-scoring-service";
+import { resolvePlayingXi } from "@/lib/live/player-roster";
 import { queueOfflineAction, isOnline } from "@/lib/offline/store";
+import { syncPendingActions } from "@/lib/offline/sync";
+import { undoLastBall } from "@/lib/engine/live-scoring-service";
+import { generateId } from "@/lib/utils";
+import type { ScoringAction } from "@/types";
 
 export default function MobileScorerPage({
   params,
@@ -16,135 +24,120 @@ export default function MobileScorerPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = use(params);
-  const { data: fixtures = [] } = useFixtures();
-  const fixture = fixtures.find((f) => f.id === matchId);
-  const [innings, setInnings] = useState<Innings | null>(null);
-  const [balls, setBalls] = useState<Ball[]>([]);
-  const [sequence, setSequence] = useState(0);
+  const { user } = useAuth();
+  const live = useLiveMatch(matchId);
+  const { fixture, match, currentInnings, balls } = live;
   const [offline, setOffline] = useState(false);
-
-  useEffect(() => {
-    if (!fixture) return;
-    const now = new Date().toISOString();
-    setInnings({
-      id: generateId("inn"),
-      matchId: fixture.id,
-      teamId: fixture.teamAId,
-      teamName: fixture.teamAName,
-      inningsNumber: 1,
-      runs: 0,
-      wickets: 0,
-      overs: 0,
-      balls: 0,
-      extras: { total: 0, wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0 },
-      runRate: 0,
-      partnership: { runs: 0, balls: 0, batsman1Id: "", batsman2Id: "", batsman1Runs: 0, batsman2Runs: 0 },
-      completed: false,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }, [fixture]);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
+    const onOnline = async () => {
+      setOffline(false);
+      if (user) {
+        await syncPendingActions(matchId, { uid: user.uid, email: user.email ?? undefined });
+      }
+    };
     check();
-    window.addEventListener("online", check);
+    window.addEventListener("online", onOnline);
     window.addEventListener("offline", check);
     return () => {
-      window.removeEventListener("online", check);
+      window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", check);
     };
-  }, []);
+  }, [matchId, user]);
 
-  const mockMatch = fixture
-    ? {
-        id: fixture.id,
-        fixtureId: fixture.id,
-        matchId: fixture.matchId,
-        stage: fixture.stage,
-        status: "live" as const,
-        date: fixture.date,
-        startTime: fixture.startTime,
-        ground: fixture.ground,
-        overs: fixture.overs,
-        teamAId: fixture.teamAId,
-        teamBId: fixture.teamBId,
-        teamAName: fixture.teamAName,
-        teamBName: fixture.teamBName,
-        playingXiA: [],
-        playingXiB: [],
-        locked: false,
-        published: false,
-        shareSlug: fixture.id,
-        createdAt: "",
-        updatedAt: "",
-      }
-    : null;
+  const getContext = useCallback((): ScoringContext | null => {
+    if (!currentInnings?.strikerId || !currentInnings.nonStrikerId || !currentInnings.bowlerId) {
+      return null;
+    }
+    const battingXi = resolvePlayingXi(currentInnings.teamName, match?.playingXiA);
+    const bowlingName =
+      currentInnings.teamId === fixture?.teamAId ? fixture?.teamBName : fixture?.teamAName;
+    const bowlingXi = resolvePlayingXi(bowlingName ?? "", match?.playingXiB);
+
+    const s = battingXi.find((p) => p.id === currentInnings.strikerId);
+    const ns = battingXi.find((p) => p.id === currentInnings.nonStrikerId);
+    const bw = bowlingXi.find((p) => p.id === currentInnings.bowlerId);
+    if (!s || !ns || !bw) return null;
+
+    return {
+      strikerId: s.id,
+      strikerName: s.name,
+      nonStrikerId: ns.id,
+      nonStrikerName: ns.name,
+      bowlerId: bw.id,
+      bowlerName: bw.name,
+    };
+  }, [currentInnings, match, fixture]);
 
   const handleScore = useCallback(
     async (action: ScoringAction) => {
-      if (!innings || !mockMatch) return;
+      if (!match || !currentInnings || busy) return;
+      const ctx = getContext();
+      if (!ctx) return;
 
-      const result = scoreBall({
-        match: mockMatch,
-        innings,
-        strikerId: "b1",
-        strikerName: "Striker",
-        nonStrikerId: "b2",
-        nonStrikerName: "Non-Striker",
-        bowlerId: "bw1",
-        bowlerName: "Bowler",
-        action,
-        sequence,
-      });
-
-      setBalls((prev) => [...prev, result.ball]);
-      setInnings((prev) =>
-        prev ? { ...prev, ...result.updatedInnings, updatedAt: new Date().toISOString() } : null
-      );
-      setSequence((s) => s + 1);
-
-      if (offline) {
-        await queueOfflineAction({
-          id: generateId("pending"),
-          matchId: fixture!.id,
-          inningsId: innings.id,
-          action,
-          strikerId: "b1",
-          strikerName: "Striker",
-          nonStrikerId: "b2",
-          nonStrikerName: "Non-Striker",
-          bowlerId: "bw1",
-          bowlerName: "Bowler",
-          sequence,
-          createdAt: new Date().toISOString(),
-          synced: false,
-        });
+      setBusy(true);
+      try {
+        const userMeta = user ? { uid: user.uid, email: user.email ?? undefined } : undefined;
+        if (offline) {
+          await queueOfflineAction({
+            id: generateId("pending"),
+            matchId: match.id,
+            inningsId: currentInnings.id,
+            action,
+            ...ctx,
+            sequence: currentInnings.nextSequence ?? balls.length,
+            createdAt: new Date().toISOString(),
+            synced: false,
+          });
+        } else {
+          await applyScoringAction(match, currentInnings, balls, action, ctx, userMeta);
+        }
+      } finally {
+        setBusy(false);
       }
     },
-    [innings, mockMatch, sequence, offline, fixture]
+    [match, currentInnings, balls, busy, getContext, offline, user]
   );
 
-  const handleUndo = useCallback(() => {
-    if (balls.length === 0 || !innings) return;
-    const lastBall = balls[balls.length - 1];
-    const updated = undoBall(innings, lastBall);
-    setBalls((prev) => prev.slice(0, -1));
-    setInnings((prev) => (prev ? { ...prev, ...updated } : null));
-    setSequence((s) => s - 1);
-  }, [balls, innings]);
+  const handleUndo = useCallback(async () => {
+    if (!match || !currentInnings || balls.length === 0 || busy) return;
+    setBusy(true);
+    try {
+      await undoLastBall(
+        match,
+        currentInnings,
+        balls,
+        user ? { uid: user.uid, email: user.email ?? undefined } : undefined
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [match, currentInnings, balls, busy, user]);
 
-  if (!fixture || !innings) {
+  if (!fixture) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        Loading scorer...
+        Match not found
+      </div>
+    );
+  }
+
+  if (!currentInnings) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-xl font-bold mb-2">Match not started</p>
+        <p className="text-slate-400 mb-6">Start scoring from Admin → Match Control</p>
+        <Link href={`/admin/matches/${fixture.id}/score`} className="text-accent">
+          Open Admin Scorer
+        </Link>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      {/* Score strip */}
       <div className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 px-4 py-3">
         <div className="flex items-center justify-between">
           <Link href={`/live/${fixture.id}`} className="p-2">
@@ -153,13 +146,13 @@ export default function MobileScorerPage({
           <div className="text-center">
             <p className="text-xs text-slate-400">{fixture.matchId}</p>
             <p className="text-2xl font-black tabular-nums">
-              {innings.runs}/{innings.wickets}
+              {currentInnings.runs}/{currentInnings.wickets}
               <span className="text-sm font-normal text-slate-400 ml-2">
-                ({formatOvers(innings.overs, innings.balls)})
+                ({formatOvers(currentInnings.overs, currentInnings.balls)})
               </span>
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-right min-w-[60px]">
             {offline && (
               <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full">
                 Offline
@@ -172,7 +165,8 @@ export default function MobileScorerPage({
       <MobileScorer
         onScore={handleScore}
         onUndo={handleUndo}
-        currentOver={formatOvers(innings.overs, innings.balls)}
+        disabled={busy || match.status === "paused"}
+        currentOver={formatOvers(currentInnings.overs, currentInnings.balls)}
       />
     </div>
   );

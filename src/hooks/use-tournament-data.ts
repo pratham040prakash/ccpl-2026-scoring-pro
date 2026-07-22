@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import {
   getAnnouncements,
@@ -79,24 +80,36 @@ export function useMatches(status?: string) {
 export function usePointsTable() {
   const { getPointsTable, scores } = useMatchResults();
   const scoreKey = Object.keys(scores).length;
+  const queryClient = useQueryClient();
 
-  return useQuery({
+  useEffect(() => {
+    const refresh = () => {
+      queryClient.invalidateQueries({ queryKey: ["pointsTable"] });
+    };
+    window.addEventListener("ccpl-standings-updated", refresh);
+    return () => window.removeEventListener("ccpl-standings-updated", refresh);
+  }, [queryClient]);
+
+  const query = useQuery({
     queryKey: ["pointsTable", scoreKey],
     queryFn: async () => {
+      if (isFirebaseConfigured()) {
+        try {
+          const table = await fetchPointsTableFromFirestore();
+          if (table.length) return table;
+        } catch {
+          /* fall through */
+        }
+      }
       if (scoreKey > 0) {
         return getPointsTable();
       }
-      if (!isFirebaseConfigured()) {
-        return emptyPointsTable();
-      }
-      try {
-        const table = await fetchPointsTableFromFirestore();
-        return table.length ? table : emptyPointsTable();
-      } catch {
-        return emptyPointsTable();
-      }
+      return emptyPointsTable();
     },
+    refetchInterval: isFirebaseConfigured() ? 8000 : false,
   });
+
+  return query;
 }
 
 export function useSettings() {

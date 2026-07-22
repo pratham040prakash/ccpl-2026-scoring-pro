@@ -58,6 +58,28 @@ body {
   background: linear-gradient(135deg, #0066cc 0%, #004999 40%, #ff6b00 100%);
 }
 
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.live-badge::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: white;
+}
+
 .gradient-text {
   background: linear-gradient(135deg, #0066cc, #ff6b00);
   -webkit-background-clip: text;

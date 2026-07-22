@@ -24,6 +24,8 @@ export type DismissalType =
   | "stumped"
   | "hit_wicket"
   | "retired_hurt"
+  | "timed_out"
+  | "obstructing_field"
   | "none";
 
 export type BallExtra = "wide" | "no_ball" | "bye" | "leg_bye" | "penalty" | null;
@@ -193,8 +195,27 @@ export interface Innings {
   partnership: Partnership;
   lastWicket?: LastWicket;
   completed: boolean;
+  /** Monotonic ball counter for concurrency-safe scoring */
+  nextSequence?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BallAuditEntry {
+  id: string;
+  matchId: string;
+  inningsId: string;
+  action: "score" | "undo" | "restore" | "edit" | "delete";
+  ballId?: string;
+  sequence: number;
+  overLabel: string;
+  snapshot: {
+    innings: Innings;
+    ballCount: number;
+  };
+  createdBy: string;
+  createdByEmail?: string;
+  timestamp: string;
 }
 
 export interface ExtrasBreakdown {
@@ -247,6 +268,8 @@ export interface Ball {
   commentary: string;
   timestamp: string;
   isLegalDelivery: boolean;
+  createdBy?: string;
+  version?: number;
 }
 
 export interface CommentaryEntry {
@@ -324,6 +347,8 @@ export interface ScoringAction {
   dismissal?: DismissalType;
   dismissedPlayerId?: string;
   fielderId?: string;
+  /** New batter at crease after wicket (optional — pick in scorer UI) */
+  newBatterId?: string;
 }
 
 export interface BatterScore {

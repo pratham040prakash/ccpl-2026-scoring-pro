@@ -9,6 +9,7 @@ interface LiveScoreboardProps {
   teamName: string;
   innings?: Innings;
   target?: number;
+  matchOvers?: number;
   batters: BatterScore[];
   bowlers: BowlerScore[];
   lastSixBalls: Ball[];
@@ -22,6 +23,7 @@ export function LiveScoreboard({
   teamName,
   innings,
   target,
+  matchOvers = 20,
   batters,
   bowlers,
   lastSixBalls,
@@ -59,7 +61,7 @@ export function LiveScoreboard({
         {target && (
           <p className="mt-2 text-sm opacity-90">
             Target: {target} · Need {target - innings.runs} from{" "}
-            {Math.max(0, (innings.overs * 6 + innings.balls) - (innings.overs * 6 + innings.balls))} balls
+            {Math.max(0, matchOvers * 6 - (innings.overs * 6 + innings.balls))} balls
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-4 text-sm">

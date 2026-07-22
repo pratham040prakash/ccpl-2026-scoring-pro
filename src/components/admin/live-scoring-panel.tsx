@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Radio, Smartphone, ListOrdered } from "lucide-react";
+import { PenLine, Radio, Smartphone, ListOrdered, Tv } from "lucide-react";
 import type { Fixture } from "@/types";
-
-const LIVE_SCORER_URL = "https://cricketscore.in.net/";
 
 type Props = {
   fixtures?: Fixture[];
@@ -26,7 +24,7 @@ export function LiveScoringPanel({ fixtures = [], compact = false }: Props) {
             <Radio className="w-5 h-5 text-accent" /> Live Scoring
           </h2>
           <p className="text-sm text-slate-500">
-            Score ball-by-ball online, then publish the final result to CCPL standings below.
+            Firestore realtime — one ball update syncs instantly to public live, TV, and mobile views.
           </p>
         </div>
       )}
@@ -48,62 +46,53 @@ export function LiveScoringPanel({ fixtures = [], compact = false }: Props) {
               </option>
             ))}
           </select>
-          {selected && (
-            <p className="text-xs text-slate-500 mt-2">
-              Copy team names into the live scorer: <strong>{selected.teamAName}</strong> vs{" "}
-              <strong>{selected.teamBName}</strong> · max <strong>{selected.overs}</strong> overs
-            </p>
-          )}
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <a
-          href={LIVE_SCORER_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent text-white font-semibold hover:brightness-110"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Open cricketscore.in.net
-        </a>
-        {selected && (
+      {selected && (
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+          <Link
+            href={`/admin/matches/${selected.id}/score`}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:brightness-110"
+          >
+            <PenLine className="w-4 h-4" />
+            Open Live Scorer
+          </Link>
           <Link
             href={`/match/${selected.id}/score/mobile`}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-200/30 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-accent text-white font-semibold"
           >
             <Smartphone className="w-4 h-4" />
-            CCPL Mobile Scorer
+            Mobile Scorer
           </Link>
-        )}
-      </div>
+          <Link
+            href={`/live/${selected.id}`}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-200/30 font-semibold"
+          >
+            <Radio className="w-4 h-4" />
+            Public Live
+          </Link>
+          <Link
+            href={`/match/${selected.id}/tv`}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-slate-200/30 font-semibold"
+          >
+            <Tv className="w-4 h-4" />
+            TV Mode
+          </Link>
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-200/20 bg-slate-500/5 p-4">
         <p className="text-sm font-semibold flex items-center gap-2 mb-3">
           <ListOrdered className="w-4 h-4 text-primary" /> Workflow
         </p>
         <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
-          <li>
-            Open{" "}
-            <a href={LIVE_SCORER_URL} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-              cricketscore.in.net
-            </a>{" "}
-            on your phone during the match.
-          </li>
-          <li>Set max overs and enter both team names (from the match selector above).</li>
-          <li>Score each ball — Dot, runs, Wide, No ball, Wicket.</li>
-          <li>When the match ends, note final runs/wickets for both teams.</li>
-          <li>
-            Switch to the <strong>Manual Entry</strong> tab on this page and save the result — standings update on
-            the CCPL site.
-          </li>
+          <li>Open <strong>Live Scorer</strong> and tap Start Match.</li>
+          <li>Score each ball — runs, extras, wickets update all viewers in realtime.</li>
+          <li>Use Undo or Restore to Over X.Y if a mistake is made (full audit trail).</li>
+          <li>When complete, publish final result in Manual Entry for standings.</li>
         </ol>
       </div>
-
-      <p className="text-xs text-slate-500">
-        Live counter scores stay on cricketscore.in.net until you enter the final result here. Optional: use{" "}
-        <strong>Share match code</strong> on their site so spectators can follow live.
-      </p>
     </div>
   );
 }

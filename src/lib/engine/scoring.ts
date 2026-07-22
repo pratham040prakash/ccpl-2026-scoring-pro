@@ -128,8 +128,12 @@ export function scoreBall(input: ScoreBallInput): {
 
   const maxBalls = match.overs * 6;
   const currentBalls = totalBalls(newOvers, newBalls);
+  const chasedTarget =
+    innings.inningsNumber === 2 &&
+    match.target != null &&
+    newRuns >= match.target;
   const completeInnings =
-    newWickets >= 10 || currentBalls >= maxBalls;
+    newWickets >= 10 || currentBalls >= maxBalls || chasedTarget;
 
   const commentary = generateCommentary({
     action,
@@ -259,5 +263,5 @@ export function calculateProjectedScore(
   const delivered = totalBalls(overs, balls);
   if (delivered === 0) return 0;
   const rr = (runs / delivered) * 6;
-  return Math.round((rr * maxOvers) / 6) * 6 / 6 * maxOvers * (rr / 6);
+  return Math.round(rr * maxOvers);
 }

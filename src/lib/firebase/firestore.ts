@@ -16,6 +16,7 @@ import { getFirebaseDb, isFirebaseConfigured } from "./config";
 import type {
   Announcement,
   Ball,
+  BallAuditEntry,
   CommentaryEntry,
   Fixture,
   Innings,
@@ -25,6 +26,7 @@ import type {
   Team,
   TournamentSettings,
   UserProfile,
+  LeaderboardEntry,
 } from "@/types";
 
 const COL = {
@@ -41,6 +43,8 @@ const COL = {
   announcements: "announcements",
   settings: "settings",
   media: "media",
+  ballAudit: "ballAudit",
+  scoreboard: "scoreboard",
 } as const;
 
 function db() {
@@ -153,6 +157,48 @@ export async function getAnnouncements(): Promise<Announcement[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Announcement);
 }
 
+export function subscribeToCommentary(
+  matchId: string,
+  callback: (entries: CommentaryEntry[]) => void
+): Unsubscribe {
+  if (!isFirebaseConfigured()) {
+    callback([]);
+    return () => {};
+  }
+  return onSnapshot(
+    query(
+      collection(db(), COL.commentary),
+      where("matchId", "==", matchId),
+      orderBy("timestamp", "desc"),
+      limit(100)
+    ),
+    (snap) => {
+      callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as CommentaryEntry));
+    }
+  );
+}
+
+export async function createMatchDoc(match: Match): Promise<void> {
+  await setDoc(doc(db(), COL.matches, match.id), match);
+}
+
+export async function saveAuditEntry(entry: BallAuditEntry): Promise<void> {
+  await setDoc(doc(db(), COL.ballAudit, entry.id), entry);
+}
+
+export async function getAuditLog(matchId: string): Promise<BallAuditEntry[]> {
+  if (!isFirebaseConfigured()) return [];
+  const snap = await getDocs(
+    query(
+      collection(db(), COL.ballAudit),
+      where("matchId", "==", matchId),
+      orderBy("timestamp", "desc"),
+      limit(200)
+    )
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BallAuditEntry);
+}
+
 export function subscribeToMatch(
   matchId: string,
   callback: (match: Match | null) => void
@@ -217,6 +263,62 @@ export async function saveInnings(innings: Innings): Promise<void> {
 
 export async function saveCommentary(entry: CommentaryEntry): Promise<void> {
   await setDoc(doc(db(), COL.commentary, entry.id), entry);
+}
+
+export interface LiveNotificationDoc {
+  id: string;
+  matchId: string;
+  type: string;
+  title: string;
+  body: string;
+  timestamp: string;
+  public?: boolean;
+}
+
+export function subscribeToLeaderboards(
+  callback: (boards: Record<string, LeaderboardEntry[]>) => void
+): Unsubscribe {
+  if (!isFirebaseConfigured()) {
+    callback({});
+    return () => {};
+  }
+  return onSnapshot(collection(db(), COL.leaderboards), (snap) => {
+    const map: Record<string, LeaderboardEntry[]> = {};
+    for (const d of snap.docs) {
+      const data = d.data() as { entries?: LeaderboardEntry[] };
+      map[d.id] = data.entries ?? [];
+    }
+    callback(map);
+  });
+}
+
+export function subscribeToNotifications(
+  matchId: string,
+  callback: (notes: LiveNotificationDoc[]) => void
+): Unsubscribe {
+  if (!isFirebaseConfigured()) {
+    callback([]);
+    return () => {};
+  }
+  let lastKey = "";
+  return onSnapshot(
+    query(
+      collection(db(), "notifications"),
+      where("matchId", "==", matchId),
+      orderBy("timestamp", "desc"),
+      limit(5)
+    ),
+    (snap) => {
+      const notes = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as LiveNotificationDoc
+      );
+      const key = notes[0]?.id ?? "";
+      if (key && key !== lastKey) {
+        lastKey = key;
+        callback(notes);
+      }
+    }
+  );
 }
 
 export { COL };

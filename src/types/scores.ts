@@ -18,7 +18,7 @@ export interface StoredMatchScore {
   margin: string;
   marginType: "runs" | "wickets";
   status: "completed" | "published";
-  source: "csv" | "image" | "manual" | "scorer";
+  source: "csv" | "image" | "manual" | "scorer" | "live";
   updatedAt: string;
 }
 
