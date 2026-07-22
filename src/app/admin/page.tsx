@@ -166,7 +166,7 @@ export default function AdminPage() {
           </p>
         </div>
         <Link
-          href="/admin/matches/new"
+          href="/admin/matches"
           className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-semibold hover:brightness-110"
         >
           <Play className="w-5 h-5" /> Start Match
