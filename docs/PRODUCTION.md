@@ -27,7 +27,7 @@ Add all of these for **Production**:
 | Variable | Value |
 |----------|--------|
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Firebase → Project settings → Service accounts → Generate key → paste **one-line JSON** |
-| `ADMIN_EMAILS` | **Your Google sign-in email** (e.g. `you@gmail.com`) |
+| `ADMIN_EMAILS` | `sppratham@gmail.com` |
 
 > `ADMIN_EMAILS` can list multiple admins: `email1@gmail.com,email2@cisco.com`
 
