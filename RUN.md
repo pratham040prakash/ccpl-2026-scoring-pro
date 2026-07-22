@@ -3,10 +3,10 @@
 ## 1. Go to the app folder
 
 ```bash
-cd ccpl-2026-scoring-pro
+cd ~/Documents/ccpl-2026-scoring-pro
 ```
 
-**Not** the `stock-analyzer` root — the app lives in the `ccpl-2026-scoring-pro` subfolder.
+This is a **standalone project** — not part of `stock-analyzer`.
 
 ## 2. Install (first time only)
 
