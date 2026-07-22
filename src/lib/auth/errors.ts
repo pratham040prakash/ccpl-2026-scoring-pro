@@ -9,8 +9,8 @@ export function formatAuthError(error: unknown): string {
       return "Sign-in was cancelled. Please try again.";
     case "auth/unauthorized-domain":
       return "This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
-    case "auth/operation-not-allowed":
-      return "This sign-in method is not enabled. Enable Email/Password or Google in Firebase Console → Authentication → Sign-in method.";
+    case "auth/configuration-not-found":
+      return "Firebase Authentication is not set up yet. In Firebase Console → ccpl-2026-scoring-pro → Authentication, click Get started, then enable Email/Password under Sign-in method.";
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
@@ -21,7 +21,7 @@ export function formatAuthError(error: unknown): string {
     case "auth/too-many-requests":
       return "Too many failed attempts. Wait a few minutes and try again.";
     case "auth/invalid-api-key":
-      return "Invalid Firebase API key. In Vercel, set NEXT_PUBLIC_FIREBASE_API_KEY to the apiKey from Firebase Console → Project settings → Your apps → Web app (project: scoring-app-dbff0). Then redeploy.";
+      return "Invalid Firebase API key. In Vercel, set NEXT_PUBLIC_FIREBASE_API_KEY to the apiKey from Firebase Console → Project settings → Your apps → Web app (project: ccpl-2026-scoring-pro). Then redeploy.";
     default:
       return message || "Sign-in failed. Please try again.";
   }
