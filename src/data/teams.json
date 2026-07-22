@@ -188,11 +188,15 @@
   {
     "name": "The Cluster XI",
     "shortName": "C",
-    "captain": "Praveen T P",
+    "captain": "Praveen Thottumadayil Prabhakaran",
     "captainEmail": "pthottum@cisco.com",
     "status": "Confirmed",
     "need": "OK",
     "players": [
+      {
+        "name": "Praveen Thottumadayil Prabhakaran",
+        "email": "pthottum@cisco.com"
+      },
       {
         "name": "Raushan Kumar",
         "email": "raukuma2@cisco.com"
