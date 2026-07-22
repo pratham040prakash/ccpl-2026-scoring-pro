@@ -30,13 +30,49 @@ function emptyPointsTable() {
   }));
 }
 
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
+import {
+  getAnnouncements,
+  getFixtures,
+  getMatches,
+  getPointsTable as fetchPointsTableFromFirestore,
+  getSettings,
+  getTeams,
+} from "@/lib/firebase/firestore";
+import { DEMO_DATA } from "@/lib/seed";
+import { useMatchResults } from "@/providers/match-results-provider";
+
+function emptyPointsTable() {
+  return DEMO_DATA.teams.map((t, i) => ({
+    teamId: t.id,
+    teamName: t.name,
+    played: 0,
+    won: 0,
+    lost: 0,
+    tied: 0,
+    nr: 0,
+    points: 0,
+    runsFor: 0,
+    runsAgainst: 0,
+    nrr: 0,
+    rank: i + 1,
+  }));
+}
+
 export function useTeams() {
   return useQuery({
     queryKey: ["teams"],
     queryFn: async () => {
       if (!isFirebaseConfigured()) return DEMO_DATA.teams;
-      const teams = await getTeams();
-      return teams.length ? teams : DEMO_DATA.teams;
+      try {
+        const teams = await getTeams();
+        return teams.length ? teams : DEMO_DATA.teams;
+      } catch {
+        return DEMO_DATA.teams;
+      }
     },
   });
 }
@@ -50,8 +86,12 @@ export function useFixtures() {
     queryFn: async () => {
       let base = DEMO_DATA.fixtures;
       if (isFirebaseConfigured()) {
-        const fixtures = await getFixtures();
-        base = fixtures.length ? fixtures : DEMO_DATA.fixtures;
+        try {
+          const fixtures = await getFixtures();
+          base = fixtures.length ? fixtures : DEMO_DATA.fixtures;
+        } catch {
+          base = DEMO_DATA.fixtures;
+        }
       }
       return getMergedFixtures(base);
     },
@@ -81,8 +121,12 @@ export function usePointsTable() {
       if (!isFirebaseConfigured()) {
         return emptyPointsTable();
       }
-      const table = await fetchPointsTableFromFirestore();
-      return table.length ? table : emptyPointsTable();
+      try {
+        const table = await fetchPointsTableFromFirestore();
+        return table.length ? table : emptyPointsTable();
+      } catch {
+        return emptyPointsTable();
+      }
     },
   });
 }
@@ -92,8 +136,12 @@ export function useSettings() {
     queryKey: ["settings"],
     queryFn: async () => {
       if (!isFirebaseConfigured()) return DEMO_DATA.settings;
-      const settings = await getSettings();
-      return settings || DEMO_DATA.settings;
+      try {
+        const settings = await getSettings();
+        return settings || DEMO_DATA.settings;
+      } catch {
+        return DEMO_DATA.settings;
+      }
     },
   });
 }
@@ -103,8 +151,12 @@ export function useAnnouncements() {
     queryKey: ["announcements"],
     queryFn: async () => {
       if (!isFirebaseConfigured()) return DEMO_DATA.announcements;
-      const announcements = await getAnnouncements();
-      return announcements.length ? announcements : DEMO_DATA.announcements;
+      try {
+        const announcements = await getAnnouncements();
+        return announcements.length ? announcements : DEMO_DATA.announcements;
+      } catch {
+        return DEMO_DATA.announcements;
+      }
     },
   });
 }
