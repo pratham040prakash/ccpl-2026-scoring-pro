@@ -11,6 +11,8 @@ export function formatAuthError(error: unknown): string {
       return "This domain is not authorized in Firebase. Add it under Authentication → Settings → Authorized domains.";
     case "auth/configuration-not-found":
       return "Firebase Authentication is not set up yet. In Firebase Console → ccpl-2026-scoring-pro → Authentication, click Get started, then enable Email/Password under Sign-in method.";
+    case "auth/operation-not-allowed":
+      return "This sign-in method is not enabled. Enable Email/Password or Google in Firebase Console → Authentication → Sign-in method.";
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
