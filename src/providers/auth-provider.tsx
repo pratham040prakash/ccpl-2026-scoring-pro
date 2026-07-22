@@ -32,15 +32,57 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function bootstrapAdminIfAllowed(firebaseUser: User): Promise<void> {
+async function bootstrapAdminIfAllowed(firebaseUser: User): Promise<UserRole | null> {
   try {
     const token = await firebaseUser.getIdToken();
-    await fetch("/api/admin/bootstrap", {
+    const res = await fetch("/api/admin/bootstrap", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
+    const data = (await res.json()) as { success?: boolean; role?: UserRole };
+    if (data.success && data.role) return data.role;
   } catch {
     // Non-fatal — user may not be in ADMIN_EMAILS
+  }
+  return null;
+}
+
+function profileFromAuthUser(firebaseUser: User, role: UserRole = "viewer"): UserProfile {
+  const now = new Date().toISOString();
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || "",
+    displayName: firebaseUser.displayName || "User",
+    photoURL: firebaseUser.photoURL || undefined,
+    role,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+async function loadUserProfile(firebaseUser: User): Promise<UserProfile> {
+  try {
+    let userProfile = await getUserProfile(firebaseUser.uid);
+    if (!userProfile) {
+      userProfile = profileFromAuthUser(firebaseUser);
+      await upsertUserProfile(userProfile);
+    }
+
+    if (userProfile.role !== "administrator") {
+      const bootRole = await bootstrapAdminIfAllowed(firebaseUser);
+      if (bootRole) {
+        userProfile = { ...userProfile, role: bootRole };
+      } else {
+        userProfile = (await getUserProfile(firebaseUser.uid)) || userProfile;
+      }
+    }
+
+    return userProfile;
+  } catch {
+    let userProfile = profileFromAuthUser(firebaseUser);
+    const bootRole = await bootstrapAdminIfAllowed(firebaseUser);
+    if (bootRole) userProfile = { ...userProfile, role: bootRole };
+    return userProfile;
   }
 }
 
@@ -71,25 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
-          let userProfile = await getUserProfile(firebaseUser.uid);
-          if (!userProfile) {
-            userProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              displayName: firebaseUser.displayName || "User",
-              photoURL: firebaseUser.photoURL || undefined,
-              role: "viewer",
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            await upsertUserProfile(userProfile);
-          }
-
-          if (userProfile.role !== "administrator") {
-            await bootstrapAdminIfAllowed(firebaseUser);
-            userProfile = (await getUserProfile(firebaseUser.uid)) || userProfile;
-          }
-
+          const userProfile = await loadUserProfile(firebaseUser);
           setProfile(userProfile);
           setSignInError(null);
         } catch (error) {

@@ -1,6 +1,10 @@
 export function formatAuthError(error: unknown): string {
   const code = (error as { code?: string })?.code;
-  const message = (error as { message?: string })?.message;
+  const message = (error as { message?: string })?.message || "";
+
+  if (message.includes("client is offline") || code === "unavailable") {
+    return "Firestore is not reachable. In Firebase Console → ccpl-2026-scoring-pro → Firestore Database, click Create database, then refresh and sign in again.";
+  }
 
   switch (code) {
     case "auth/popup-blocked":

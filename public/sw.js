@@ -1,4 +1,4 @@
-const CACHE_NAME = "ccpl-scoring-pro-v1";
+const CACHE_NAME = "ccpl-scoring-pro-v2";
 const OFFLINE_URLS = ["/", "/fixtures", "/standings", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -19,6 +19,15 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+  const skipCache =
+    url.hostname.includes("googleapis.com") ||
+    url.hostname.includes("firebaseio.com") ||
+    url.hostname.includes("firebaseapp.com") ||
+    url.pathname.startsWith("/api/");
+
+  if (skipCache) return;
 
   event.respondWith(
     fetch(event.request)
