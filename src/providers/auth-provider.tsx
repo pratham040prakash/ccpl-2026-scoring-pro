@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   getRedirectResult,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut as firebaseSignOut,
@@ -21,6 +22,7 @@ interface AuthContextValue {
   loading: boolean;
   signingIn: boolean;
   signInError: string | null;
+  signInWithEmailPassword: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   hasRole: (...roles: UserRole[]) => boolean;
@@ -102,6 +104,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [isDemo]);
 
+  const signInWithEmailPassword = async (email: string, password: string) => {
+    setSignInError(null);
+
+    if (isDemo) {
+      setSignInError(
+        "Firebase is not configured on this deployment. Add NEXT_PUBLIC_FIREBASE_* variables in Vercel and redeploy."
+      );
+      return;
+    }
+
+    if (!email || !password) {
+      setSignInError("Enter your email and password.");
+      return;
+    }
+
+    setSigningIn(true);
+    try {
+      await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
+    } catch (error) {
+      setSignInError(formatAuthError(error));
+      setSigningIn(false);
+    }
+  };
+
   const signInWithGoogle = async () => {
     setSignInError(null);
 
@@ -169,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signingIn,
         signInError,
+        signInWithEmailPassword,
         signInWithGoogle,
         signOut,
         hasRole,

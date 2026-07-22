@@ -13,13 +13,11 @@ import {
   Menu,
   X,
   LogOut,
-  Tv,
-  Smartphone,
+  LogIn,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
-import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { useTheme } from "@/providers/theme-provider";
 
 const NAV = [
@@ -33,9 +31,14 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { profile, signOut, hasRole, isDemo } = useAuth();
+  const { profile, signOut, hasRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const loginHref =
+    pathname.startsWith("/admin") || pathname.startsWith("/login")
+      ? "/login?redirect=/admin"
+      : `/login?redirect=${encodeURIComponent(pathname)}`;
 
   const isFullscreen =
     pathname.includes("/tv") ||
@@ -108,15 +111,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 Sign out
               </button>
             ) : (
-              !isDemo && (
-                <div className="hidden sm:block">
-                  <GoogleSignInButton
-                    label="Sign in"
-                    showDemoHint={false}
-                    className="px-3 py-2 rounded-lg text-sm font-medium"
-                  />
-                </div>
-              )
+              <Link
+                href={loginHref}
+                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-primary text-white hover:brightness-110"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign in
+              </Link>
             )}
 
             <button
@@ -146,10 +147,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/admin" onClick={() => setMenuOpen(false)} className="px-4 py-3 rounded-lg">
               Admin
             </Link>
-            {!profile && !isDemo && (
-              <div className="mx-4 mt-2">
-                <GoogleSignInButton showDemoHint={false} />
-              </div>
+            {!profile && (
+              <Link
+                href={loginHref}
+                onClick={() => setMenuOpen(false)}
+                className="mx-4 mt-2 py-3 rounded-lg bg-primary text-white font-medium text-center flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign in
+              </Link>
             )}
           </nav>
         )}

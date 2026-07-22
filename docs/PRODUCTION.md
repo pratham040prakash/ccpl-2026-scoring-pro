@@ -37,8 +37,11 @@ Click **Save** → **Deployments → Redeploy** latest.
 
 ## Step 2 — Firebase Console
 
-1. **Authentication → Sign-in method → Google** → Enabled  
-2. **Authentication → Settings → Authorized domains** → add:
+1. **Authentication → Sign-in method** → Enable **Email/Password** and **Google**
+2. **Authentication → Users → Add user** → create admin account:
+   - Email: `sppratham@gmail.com`
+   - Password: choose a strong password (you will use this on the sign-in form)
+3. **Authentication → Settings → Authorized domains** → add:
    - `ccpl-2026-scoring-pro.vercel.app`
 3. **Firestore** database created (production mode)
 4. Deploy rules from your machine:
@@ -54,10 +57,12 @@ npm run firebase:deploy:rules
 
 ## Step 3 — Get admin access
 
-1. Open [https://ccpl-2026-scoring-pro.vercel.app/admin](https://ccpl-2026-scoring-pro.vercel.app/admin)
-2. Click **Sign in with Google** (use the email in `ADMIN_EMAILS`)
-3. You are auto-promoted to **administrator** via secure server bootstrap
+1. Open [https://ccpl-2026-scoring-pro.vercel.app/login](https://ccpl-2026-scoring-pro.vercel.app/login) (or `/admin`)
+2. Enter **email** and **password** (the account you created in Firebase)
+3. You are auto-promoted to **administrator** if your email is in `ADMIN_EMAILS`
 4. Admin panel unlocks
+
+Google sign-in is also available as an option on the sign-in page.
 
 If access is denied:
 - Confirm `ADMIN_EMAILS` matches your Google email exactly
