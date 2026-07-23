@@ -584,8 +584,8 @@
     "shortName": "RS",
     "captain": "Jayant Sipani",
     "captainEmail": "jsipani@cisco.com",
-    "status": "Short",
-    "need": "4",
+    "status": "Confirmed",
+    "need": "OK",
     "players": [
       {
         "name": "Akshay Ambu",
@@ -594,10 +594,6 @@
       {
         "name": "Jayant Sipani",
         "email": "jsipani@cisco.com"
-      },
-      {
-        "name": "Venkata Sura Reddy Kovvuri",
-        "email": "venkovvu@cisco.com"
       },
       {
         "name": "Sumukh Koushik",
@@ -636,8 +632,8 @@
         "email": "ysamaiya@cisco.com"
       },
       {
-        "name": "CHEEMALA SRIKANTHA",
-        "email": "chesrika@cisco.com"
+        "name": "Gyanendra Patro",
+        "email": null
       }
     ]
   },
