@@ -37,7 +37,33 @@ export async function POST() {
     }
 
     const data = buildSeedData();
+    const seedPlayerIds = new Set(data.players.map((p) => p.id));
+    const seedTeamIds = new Set(data.teams.map((t) => t.id));
+    const seedFixtureIds = new Set(data.fixtures.map((f) => f.id));
+
+    const [existingPlayers, existingTeams, existingFixtures] = await Promise.all([
+      db.collection("players").get(),
+      db.collection("teams").get(),
+      db.collection("fixtures").get(),
+    ]);
+
     const batch = db.batch();
+
+    for (const doc of existingPlayers.docs) {
+      if (!seedPlayerIds.has(doc.id)) {
+        batch.delete(doc.ref);
+      }
+    }
+    for (const doc of existingTeams.docs) {
+      if (!seedTeamIds.has(doc.id)) {
+        batch.delete(doc.ref);
+      }
+    }
+    for (const doc of existingFixtures.docs) {
+      if (!seedFixtureIds.has(doc.id)) {
+        batch.delete(doc.ref);
+      }
+    }
 
     for (const team of data.teams) {
       batch.set(db.collection("teams").doc(team.id), team);

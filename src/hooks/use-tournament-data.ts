@@ -7,6 +7,7 @@ import {
   getAnnouncements,
   getFixtures,
   getMatches,
+  getPlayers,
   getPointsTable as fetchPointsTableFromFirestore,
   getSettings,
   getTeams,
@@ -29,6 +30,77 @@ function emptyPointsTable() {
     nrr: 0,
     rank: i + 1,
   }));
+}
+
+import type { Player } from "@/types";
+
+function orderPlayers(players: Player[], playerIds?: string[]): Player[] {
+  if (!playerIds?.length) {
+    return [...players].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const byId = new Map(players.map((player) => [player.id, player]));
+  const ordered = playerIds
+    .map((id) => byId.get(id))
+    .filter((player): player is Player => Boolean(player));
+
+  for (const player of players) {
+    if (!ordered.some((entry) => entry.id === player.id)) {
+      ordered.push(player);
+    }
+  }
+
+  return ordered;
+}
+
+export function usePlayers(teamId?: string) {
+  return useQuery({
+    queryKey: ["players", teamId ?? "all"],
+    queryFn: async () => {
+      const demoPlayers = teamId
+        ? DEMO_DATA.players.filter((player) => player.teamId === teamId)
+        : DEMO_DATA.players;
+
+      if (!isFirebaseConfigured()) {
+        return orderPlayers(demoPlayers, DEMO_DATA.teams.find((team) => team.id === teamId)?.playerIds);
+      }
+
+      try {
+        const [players, teams] = teamId
+          ? await Promise.all([getPlayers(teamId), getTeams()])
+          : [await getPlayers(), [] as Awaited<ReturnType<typeof getTeams>>];
+
+        if (players.length) {
+          const team = teamId ? teams.find((entry) => entry.id === teamId) : undefined;
+          return orderPlayers(players, team?.playerIds);
+        }
+      } catch {
+        /* fall through */
+      }
+
+      return orderPlayers(demoPlayers, DEMO_DATA.teams.find((team) => team.id === teamId)?.playerIds);
+    },
+  });
+}
+
+export function usePlayer(playerId: string) {
+  return useQuery({
+    queryKey: ["player", playerId],
+    queryFn: async () => {
+      const demoPlayer = DEMO_DATA.players.find((player) => player.id === playerId);
+      if (!isFirebaseConfigured()) return demoPlayer ?? null;
+
+      try {
+        const players = await getPlayers();
+        const player = players.find((entry) => entry.id === playerId);
+        if (player) return player;
+      } catch {
+        /* fall through */
+      }
+
+      return demoPlayer ?? null;
+    },
+  });
 }
 
 export function useTeams() {

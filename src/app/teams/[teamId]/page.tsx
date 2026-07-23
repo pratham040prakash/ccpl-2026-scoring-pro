@@ -6,7 +6,7 @@ import { use } from "react";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { PageContainer } from "@/components/layout/page-container";
 import { DEMO_DATA } from "@/lib/seed";
-import { useTeams } from "@/hooks/use-tournament-data";
+import { usePlayers, useTeams } from "@/hooks/use-tournament-data";
 
 export default function TeamDetailPage({
   params,
@@ -15,12 +15,12 @@ export default function TeamDetailPage({
 }) {
   const { teamId } = use(params);
   const { data: teams = [] } = useTeams();
+  const { data: players = [], isLoading } = usePlayers(teamId);
   const team = teams.find((t) => t.id === teamId) || DEMO_DATA.teams.find((t) => t.id === teamId);
 
   if (!team) notFound();
 
-  const players = DEMO_DATA.players.filter((p) => p.teamId === team.id);
-  const captain = players.find((p) => p.isCaptain);
+  const captain = players.find((p) => p.isCaptain) || players.find((p) => p.id === team.captainId);
 
   return (
     <PageContainer size="md">
@@ -55,7 +55,7 @@ export default function TeamDetailPage({
       </div>
 
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Trophy className="w-5 h-5" /> Squad ({players.length})
+        <Trophy className="w-5 h-5" /> Squad ({isLoading ? "…" : players.length})
       </h2>
 
       <div className="md:hidden space-y-2 mb-8">

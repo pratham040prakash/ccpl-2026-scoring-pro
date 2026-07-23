@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { DEMO_DATA } from "@/lib/seed";
 import { PageContainer } from "@/components/layout/page-container";
 import { generatePlayerInsight } from "@/lib/engine/ai";
+import { usePlayer, useTeams } from "@/hooks/use-tournament-data";
 
 export default function PlayerPage({
   params,
@@ -14,8 +15,19 @@ export default function PlayerPage({
   params: Promise<{ playerId: string }>;
 }) {
   const { playerId } = use(params);
-  const player = DEMO_DATA.players.find((p) => p.id === playerId);
-  const team = player ? DEMO_DATA.teams.find((t) => t.id === player.teamId) : null;
+  const { data: player, isLoading } = usePlayer(playerId);
+  const { data: teams = [] } = useTeams();
+  const team =
+    (player ? teams.find((entry) => entry.id === player.teamId) : null) ||
+    (player ? DEMO_DATA.teams.find((entry) => entry.id === player.teamId) : null);
+
+  if (isLoading) {
+    return (
+      <PageContainer size="md">
+        <p className="text-slate-500 py-20 text-center">Loading player…</p>
+      </PageContainer>
+    );
+  }
 
   if (!player) notFound();
 
