@@ -86,7 +86,7 @@ export default function HomePage() {
         )}
 
         {/* Stats strip */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { icon: Calendar, label: "Fixtures", value: fixtures.length },
             { icon: Users, label: "Teams", value: teams.filter((t) => t.playerIds.length > 0).length },
@@ -101,8 +101,8 @@ export default function HomePage() {
           ))}
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 lg:gap-8">
-          <div className="md:col-span-2 xl:col-span-8 space-y-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
             {todayFixtures.length > 0 && (
               <FixtureList fixtures={todayFixtures} title="Today's Fixtures" />
             )}
@@ -112,7 +112,7 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="md:col-span-2 xl:col-span-4 space-y-6">
+          <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-accent" /> Points Table
@@ -124,12 +124,9 @@ export default function HomePage() {
               <h3 className="font-bold mb-3 flex items-center gap-2">
                 <Megaphone className="w-4 h-4" /> Announcements
               </h3>
-              <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 md:block md:overflow-visible md:space-y-3">
+              <div className="space-y-3">
                 {announcements.slice(0, 3).map((a) => (
-                  <div
-                    key={a.id}
-                    className="snap-start shrink-0 w-[85vw] max-w-sm md:w-auto border border-slate-200/10 rounded-xl p-3 md:border-0 md:rounded-none md:p-0 md:border-b md:border-slate-200/10 md:pb-3 last:border-0"
-                  >
+                  <div key={a.id} className="border-b border-slate-200/10 pb-3 last:border-0">
                     <p className="font-medium text-sm">{a.title}</p>
                     <p className="text-xs text-slate-500 mt-1">{a.body}</p>
                   </div>
