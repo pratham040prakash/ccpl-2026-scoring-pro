@@ -5,7 +5,6 @@ import { use, useState } from "react";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFirebaseAuth } from "@/lib/firebase/config";
-import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { usePlayers, useTeams } from "@/hooks/use-tournament-data";
 import { DEMO_DATA } from "@/lib/seed";
 
@@ -36,9 +35,9 @@ export default function AdminTeamRosterPage({
 
   if (!team) {
     return (
-      <PageContainer>
+      <div className="max-w-4xl mx-auto px-4 py-10">
         <p className="text-slate-500 py-20 text-center">Team not found.</p>
-      </PageContainer>
+      </div>
     );
   }
 
@@ -106,18 +105,18 @@ export default function AdminTeamRosterPage({
   };
 
   return (
-    <PageContainer size="md">
+    <div className="max-w-4xl mx-auto px-4 py-10">
       <Link
         href="/admin/teams"
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6 min-h-[44px]"
+        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Teams
       </Link>
 
-      <PageHeader
-        title={team.name}
-        subtitle={`Manage roster · ${players.length} players`}
-      />
+      <div className="mb-8">
+        <h1 className="text-3xl font-black">{team.name}</h1>
+        <p className="text-slate-500 mt-1">Manage roster · {players.length} players</p>
+      </div>
 
       {message && (
         <div className="mb-4 p-4 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
@@ -197,6 +196,6 @@ export default function AdminTeamRosterPage({
           </ul>
         )}
       </div>
-    </PageContainer>
+    </div>
   );
 }

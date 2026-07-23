@@ -22,9 +22,9 @@ export default function PlayerPage({
 
   if (isLoading) {
     return (
-      <PageContainer size="md">
+      <div className="max-w-4xl mx-auto px-4 py-10">
         <p className="text-slate-500 py-20 text-center">Loading player…</p>
-      </PageContainer>
+      </div>
     );
   }
 

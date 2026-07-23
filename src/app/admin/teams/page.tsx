@@ -2,25 +2,24 @@
 
 import Link from "next/link";
 import { ArrowLeft, Users } from "lucide-react";
-import { PageContainer, PageHeader } from "@/components/layout/page-container";
 import { useTeams } from "@/hooks/use-tournament-data";
 
 export default function AdminTeamsPage() {
   const { data: teams = [], isLoading } = useTeams();
 
   return (
-    <PageContainer>
+    <div className="max-w-6xl mx-auto px-4 py-10">
       <Link
         href="/admin"
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6 min-h-[44px]"
+        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Admin
       </Link>
 
-      <PageHeader
-        title="Manage Teams"
-        subtitle="Add or remove players from tournament rosters"
-      />
+      <div className="mb-8">
+        <h1 className="text-3xl font-black">Manage Teams</h1>
+        <p className="text-slate-500 mt-1">Add or remove players from tournament rosters</p>
+      </div>
 
       {isLoading ? (
         <p className="text-slate-500">Loading teams…</p>
@@ -48,6 +47,6 @@ export default function AdminTeamsPage() {
           ))}
         </div>
       )}
-    </PageContainer>
+    </div>
   );
 }
