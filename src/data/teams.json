@@ -364,8 +364,8 @@
     "shortName": "SC",
     "captain": "Mohanasundaram Kathirvel",
     "captainEmail": "mokathir@cisco.com",
-    "status": "Short",
-    "need": "1",
+    "status": "Confirmed",
+    "need": "OK",
     "players": [
       {
         "name": "Mohanasundaram Kathirvel",
@@ -409,6 +409,10 @@
       },
       {
         "name": "Prasanna",
+        "email": null
+      },
+      {
+        "name": "Meraj",
         "email": null
       }
     ]
