@@ -11,8 +11,12 @@ type Props = {
 };
 
 export function LiveScoringPanel({ fixtures = [], compact = false }: Props) {
-  const scheduled = fixtures.filter((f) => f.status === "scheduled" || f.status === "live");
-  const [fixtureId, setFixtureId] = useState(scheduled[0]?.id ?? fixtures[0]?.id ?? "");
+  const startable = fixtures.filter(
+    (f) => !f.placeholderA && !f.placeholderB && f.teamAId && f.teamBId
+  );
+  const scheduled = startable.filter((f) => f.status === "scheduled" || f.status === "live");
+  const pickFrom = scheduled.length ? scheduled : startable;
+  const [fixtureId, setFixtureId] = useState(pickFrom[0]?.id ?? fixtures[0]?.id ?? "");
 
   useEffect(() => {
     if (!fixtureId && fixtures[0]?.id) {

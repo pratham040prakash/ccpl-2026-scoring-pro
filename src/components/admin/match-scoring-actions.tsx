@@ -8,6 +8,7 @@ import type { Fixture } from "@/types";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
 import { initializeLiveMatch } from "@/lib/engine/live-scoring-service";
+import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,21 +24,40 @@ export function MatchScoringActions({
   compact = false,
 }: Props) {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, retryAdminBootstrap } = useAuth();
   const live = useLiveMatch(fixture.id);
   const [busy, setBusy] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [startedLocally, setStartedLocally] = useState(false);
+  const [retryingRole, setRetryingRole] = useState(false);
+  const [roleFixMessage, setRoleFixMessage] = useState<string | null>(null);
 
   const isLive =
     live.isLive ||
     live.innings.length > 0 ||
     startedLocally ||
     fixture.status === "live";
+  const startGate = canStartLiveScoring(fixture);
   const canScore = profile?.role === "administrator" || profile?.role === "scorer";
   const isViewer = profile?.role === "viewer";
 
+  const permissionError = [startError, live.error]
+    .filter(Boolean)
+    .some((msg) => msg!.toLowerCase().includes("permission"));
+
+  const handleRetryRole = async () => {
+    setRetryingRole(true);
+    setRoleFixMessage(null);
+    const err = await retryAdminBootstrap();
+    setRoleFixMessage(err ?? "Administrator access refreshed. Try Start Match again.");
+    setRetryingRole(false);
+  };
+
   const handleStart = async () => {
+    if (!startGate.ok) {
+      setStartError(startGate.reason);
+      return;
+    }
     setBusy(true);
     setStartError(null);
     try {
@@ -48,7 +68,7 @@ export function MatchScoringActions({
         router.push(`/admin/matches/${fixture.id}/score`);
       }
     } catch (error) {
-      setStartError(error instanceof Error ? error.message : String(error));
+      setStartError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -72,12 +92,43 @@ export function MatchScoringActions({
           {isLive ? "Live — ready to score" : "Not started"}
         </span>
         {(startError || live.error) && (
-          <span className="text-red-500 text-xs">{startError || live.error}</span>
+          <p className="text-red-500 text-xs whitespace-pre-wrap">{startError || live.error}</p>
         )}
       </div>
 
+      {permissionError && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm space-y-2">
+          <p className="font-semibold text-red-600 dark:text-red-400">Firestore permissions fix</p>
+          <ol className="list-decimal list-inside text-slate-600 dark:text-slate-300 space-y-1">
+            <li>
+              Firebase Console → Firestore → <strong>users</strong> → your account → set{" "}
+              <code className="text-xs">role</code> to <strong>administrator</strong>
+            </li>
+            <li>
+              Vercel env: <code className="text-xs">ADMIN_EMAILS</code> +{" "}
+              <code className="text-xs">FIREBASE_SERVICE_ACCOUNT_JSON</code>, then redeploy
+            </li>
+            <li>
+              Deploy rules locally: <code className="text-xs">npm run firebase:deploy:rules</code>
+            </li>
+          </ol>
+          <button
+            type="button"
+            onClick={handleRetryRole}
+            disabled={retryingRole}
+            className="text-sm font-semibold text-primary underline disabled:opacity-50"
+          >
+            {retryingRole ? "Retrying…" : "Retry admin access grant"}
+          </button>
+          {roleFixMessage && <p className="text-xs text-slate-500">{roleFixMessage}</p>}
+        </div>
+      )}
+
       {!isLive && (
         <div className="space-y-2">
+          {!startGate.ok && (
+            <p className="text-amber-600 text-sm">{startGate.reason}</p>
+          )}
           {isViewer && (
             <p className="text-amber-600 text-sm">
               Your account has viewer access only. Ask an admin to grant scorer or administrator role.
@@ -89,7 +140,7 @@ export function MatchScoringActions({
           <button
             type="button"
             onClick={handleStart}
-            disabled={busy || !canScore}
+            disabled={busy || !canScore || !startGate.ok}
             className={cn(
               actionClass,
               "bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50 w-full sm:w-auto"

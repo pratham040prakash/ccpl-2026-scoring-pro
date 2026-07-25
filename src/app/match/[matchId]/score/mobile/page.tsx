@@ -17,6 +17,7 @@ import { queueOfflineAction, isOnline } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
 import { undoLastBall } from "@/lib/engine/live-scoring-service";
 import { generateId } from "@/lib/utils";
+import { formatLiveStartError } from "@/lib/live/match-start";
 import type { Innings, ScoringAction } from "@/types";
 
 export default function MobileScorerPage({
@@ -61,7 +62,7 @@ export default function MobileScorerPage({
       setBootstrappedInnings(result.innings);
       live.refresh();
     } catch (error) {
-      setStartError(error instanceof Error ? error.message : String(error));
+      setStartError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }

@@ -17,6 +17,7 @@ import {
 } from "./innings-metrics";
 import { getMilestoneCommentary } from "./commentary";
 import { defaultPlayingXi } from "@/lib/live/player-roster";
+import { canStartLiveScoring } from "@/lib/live/match-start";
 import {
   getFirebaseDb,
   isFirebaseConfigured,
@@ -142,6 +143,11 @@ export async function initializeLiveMatch(
   fixture: Fixture,
   battingTeamId?: string
 ): Promise<{ match: Match; innings: Innings }> {
+  const gate = canStartLiveScoring(fixture);
+  if (!gate.ok) {
+    throw new Error(gate.reason);
+  }
+
   const batId = battingTeamId ?? fixture.teamAId;
   const match = fixtureToMatch(fixture, batId);
   const innings = createInitialInnings(match, 1);

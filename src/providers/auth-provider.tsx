@@ -74,7 +74,8 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile> {
     if (userProfile.role !== "administrator") {
       const { role: bootRole } = await bootstrapAdminIfAllowed(firebaseUser);
       if (bootRole) {
-        userProfile = { ...userProfile, role: bootRole };
+        userProfile =
+          (await getUserProfile(firebaseUser.uid)) || { ...userProfile, role: bootRole };
       } else {
         userProfile = (await getUserProfile(firebaseUser.uid)) || userProfile;
       }
@@ -84,7 +85,10 @@ async function loadUserProfile(firebaseUser: User): Promise<UserProfile> {
   } catch {
     let userProfile = profileFromAuthUser(firebaseUser);
     const { role: bootRole } = await bootstrapAdminIfAllowed(firebaseUser);
-    if (bootRole) userProfile = { ...userProfile, role: bootRole };
+    if (bootRole) {
+      userProfile =
+        (await getUserProfile(firebaseUser.uid)) || { ...userProfile, role: bootRole };
+    }
     return userProfile;
   }
 }

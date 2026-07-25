@@ -35,6 +35,7 @@ import { aggregateBatterScores, aggregateBowlerScores } from "@/lib/engine/stati
 import { queueOfflineAction, isOnline } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
 import { generateId } from "@/lib/utils";
+import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
 
 const RUN_BUTTONS = [0, 1, 2, 3, 4, 5, 6];
 const DISMISSALS: DismissalType[] = [
@@ -147,8 +148,14 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     [batters]
   );
 
+  const startGate = fixture ? canStartLiveScoring(fixture) : { ok: false as const, reason: "Match not found" };
+
   const handleStart = async () => {
     if (!fixture) return;
+    if (!startGate.ok) {
+      setStartError(startGate.reason);
+      return;
+    }
     setBusy(true);
     setStartError(null);
     try {
@@ -159,7 +166,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       live.refresh();
     } catch (error) {
       setStarted(false);
-      setStartError(error instanceof Error ? error.message : String(error));
+      setStartError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -240,6 +247,9 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
             Your account has viewer access only. Ask an admin to grant scorer or administrator role.
           </p>
         )}
+        {!startGate.ok && (
+          <p className="text-amber-600 text-sm">{startGate.reason}</p>
+        )}
         {startError && (
           <p className="text-red-500 text-sm whitespace-pre-wrap">{startError}</p>
         )}
@@ -248,7 +258,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         )}
         <button
           onClick={handleStart}
-          disabled={busy || profile?.role === "viewer"}
+          disabled={busy || profile?.role === "viewer" || !startGate.ok}
           className="px-8 py-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
         >
           {busy ? "Starting…" : "Start Match & Open Scorer"}
