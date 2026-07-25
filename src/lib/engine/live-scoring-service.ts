@@ -431,6 +431,163 @@ export async function undoLastBall(
   return updatedInnings;
 }
 
+export async function manualFinalizeMatch(
+  matchId: string,
+  match: Match,
+  user?: ScoringUser
+): Promise<{ summary?: string }> {
+  if (!user?.idToken) {
+    throw new Error("Sign in again to finalize the match and update standings.");
+  }
+  const fin = await finalizeMatchViaApi(matchId, user.idToken);
+  logScoring("finalize", fin.success ? "Manual finalize succeeded" : "Manual finalize failed", {
+    matchId,
+    message: fin.message,
+  });
+  if (!fin.success) {
+    throw new Error(fin.message ?? "Failed to finalize match.");
+  }
+  const allInnings = await getInnings(match.id);
+  syncLiveResultToLocalStorage(match, allInnings);
+  return { summary: fin.summary };
+}
+
+export function canManualFinalizeMatch(
+  match: Match | null,
+  inningsList: Innings[]
+): { ok: boolean; reason?: string } {
+  if (!match) return { ok: false, reason: "Match not loaded" };
+  if (match.result?.summary) return { ok: false, reason: "Match already finalized" };
+  if (inningsList.length < 2) {
+    return { ok: false, reason: "Both innings must exist before finalizing." };
+  }
+  const sorted = [...inningsList].sort((a, b) => a.inningsNumber - b.inningsNumber);
+  const first = sorted[0];
+  const second = sorted[1];
+  const chaseComplete =
+    match.target != null && second.runs >= match.target;
+  const inningsDone = second.completed || second.wickets >= 10;
+  if (!first.completed && first.inningsNumber === 1) {
+    return { ok: false, reason: "First innings must be marked complete." };
+  }
+  if (!chaseComplete && !inningsDone) {
+    return {
+      ok: false,
+      reason: "Second innings must finish (target reached, all out, or overs done) before finalizing.",
+    };
+  }
+  return { ok: true };
+}
+
+function inningsReplayTemplate(innings: Innings): Innings {
+  return {
+    ...innings,
+    runs: 0,
+    wickets: 0,
+    overs: 0,
+    balls: 0,
+    extras: { total: 0, wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0 },
+    completed: false,
+    nextSequence: 0,
+    partnership: {
+      runs: 0,
+      balls: 0,
+      batsman1Id: innings.strikerId ?? "",
+      batsman2Id: innings.nonStrikerId ?? "",
+      batsman1Runs: 0,
+      batsman2Runs: 0,
+    },
+  };
+}
+
+export async function editBallDelivery(
+  match: Match,
+  innings: Innings,
+  balls: Ball[],
+  ballId: string,
+  newAction: ScoringAction,
+  reason: string,
+  user?: ScoringUser
+): Promise<{ ball: Ball; innings: Innings; balls: Ball[] }> {
+  const trimmedReason = reason.trim();
+  if (trimmedReason.length < 3) {
+    throw new Error("Enter a correction reason (at least 3 characters).");
+  }
+
+  const index = balls.findIndex((b) => b.id === ballId);
+  if (index < 0) throw new Error("Ball not found");
+
+  const originalBall = balls[index];
+  const before = balls.slice(0, index);
+  const innBefore = rebuildInningsFromBalls(match, inningsReplayTemplate(innings), before);
+
+  const result = scoreBall({
+    match,
+    innings: innBefore,
+    strikerId: originalBall.strikerId,
+    strikerName: originalBall.strikerName,
+    nonStrikerId: originalBall.nonStrikerId,
+    nonStrikerName: originalBall.nonStrikerName,
+    bowlerId: originalBall.bowlerId,
+    bowlerName: originalBall.bowlerName,
+    action: newAction,
+    sequence: originalBall.sequence,
+  });
+
+  const updatedBall: Ball = {
+    ...result.ball,
+    id: originalBall.id,
+    overNumber: originalBall.overNumber,
+    ballNumber: originalBall.ballNumber,
+    createdBy: user?.uid ?? originalBall.createdBy,
+    version: (originalBall.version ?? 0) + 1,
+  };
+
+  const newBalls = [...balls.slice(0, index), updatedBall, ...balls.slice(index + 1)];
+  const rebuilt = rebuildInningsFromBalls(match, inningsReplayTemplate(innings), newBalls);
+  const metrics = enrichInningsFromBalls(rebuilt, match, newBalls);
+  const finalInnings: Innings = {
+    ...rebuilt,
+    ...metrics,
+    nextSequence: newBalls.length,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const auditEntry: BallAuditEntry = {
+    id: generateId("audit"),
+    matchId: match.id,
+    inningsId: innings.id,
+    action: "edit",
+    ballId: originalBall.id,
+    sequence: originalBall.sequence,
+    overLabel: formatOverLabel(originalBall.overNumber, originalBall.ballNumber),
+    snapshot: { innings: finalInnings, ballCount: newBalls.length },
+    originalBall,
+    updatedBall,
+    reason: trimmedReason,
+    createdBy: user?.uid ?? "system",
+    createdByEmail: user?.email,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (isFirebaseConfigured()) {
+    await saveBall(updatedBall);
+    await saveInnings(finalInnings);
+    await saveAuditEntry(auditEntry);
+  }
+
+  await cacheBall(updatedBall);
+  await cacheInnings(finalInnings);
+  logScoring("edit", "Ball corrected", {
+    ballId: originalBall.id,
+    from: originalBall.runs,
+    to: updatedBall.runs,
+    reason: trimmedReason,
+  });
+
+  return { ball: updatedBall, innings: finalInnings, balls: newBalls };
+}
+
 export async function startSecondInnings(match: Match, firstInnings: Innings): Promise<Innings> {
   const target = firstInnings.runs + 1;
   const swapped = {

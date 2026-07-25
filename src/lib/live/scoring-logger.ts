@@ -5,6 +5,7 @@ export type ScoringLogEvent =
   | "realtime_update"
   | "undo"
   | "restore"
+  | "edit"
   | "sync"
   | "finalize"
   | "error";

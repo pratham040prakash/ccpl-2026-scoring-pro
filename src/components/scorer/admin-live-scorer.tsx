@@ -22,6 +22,9 @@ import {
   pauseMatch,
   resumeMatch,
   updateInningsParticipants,
+  editBallDelivery,
+  manualFinalizeMatch,
+  canManualFinalizeMatch,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
 import { scoreBall } from "@/lib/engine/scoring";
@@ -37,6 +40,8 @@ import { resolveBattingBowlingXis } from "@/lib/live/resolve-playing-xis";
 import { buildScoringUser } from "@/lib/live/scoring-user";
 import { logScoring } from "@/lib/live/scoring-logger";
 import { ScoringDebugPanel } from "@/components/scorer/scoring-debug-panel";
+import { BallCorrectionPanel } from "@/components/scorer/ball-correction-panel";
+import { BallAuditHistory } from "@/components/scorer/ball-audit-history";
 import { BallTimelineStrip } from "@/components/scoreboard/ball-timeline";
 import { WicketFlow } from "@/components/scorer/wicket-flow";
 import { aggregateBatterScores, aggregateBowlerScores } from "@/lib/engine/statistics";
@@ -109,6 +114,8 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [participantError, setParticipantError] = useState<string | null>(null);
   const [participantsSynced, setParticipantsSynced] = useState(false);
   const [pendingBalls, setPendingBalls] = useState<Ball[]>([]);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
+  const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null);
 
   const fixture = live.fixture;
   const match = pickMatch(live.match, bootstrappedMatch);
@@ -249,6 +256,13 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   );
 
   const startGate = fixture ? canStartLiveScoring(fixture) : { ok: false as const, reason: "Match not found" };
+
+  const finalizeGate = useMemo(
+    () => canManualFinalizeMatch(match, live.innings),
+    [match, live.innings]
+  );
+
+  const bumpAudit = () => setAuditRefreshKey((k) => k + 1);
 
   useEffect(() => {
     if (!innings || participantsSynced || busy) return;
@@ -395,6 +409,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       }
       setWicketMode(false);
       setExtrasMode(null);
+      bumpAudit();
     } catch (error) {
       setParticipantError(formatLiveStartError(error));
     } finally {
@@ -412,6 +427,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       if (updated) {
         setBootstrappedInnings(updated);
         setPendingBalls([]);
+        bumpAudit();
       }
     } catch (error) {
       setParticipantError(formatLiveStartError(error));
@@ -437,6 +453,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       setBootstrappedInnings(updated);
       setPendingBalls([]);
       setRestoreOpen(false);
+      bumpAudit();
       logScoring("restore", `Restored to ${restoreOver}.${restoreBall}`, { inningsId: innings.id });
     } catch (error) {
       setParticipantError(formatLiveStartError(error));
@@ -511,8 +528,45 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         <h2 className="text-2xl font-black text-emerald-600">Match Complete</h2>
         <p className="text-lg font-bold">{match.result.summary}</p>
         <p className="text-sm text-slate-500">
-          Standings and leaderboards updated automatically.
+          Standings and leaderboards updated.
         </p>
+      </div>
+    );
+  }
+
+  if (match.status === "completed" && !match.result) {
+    return (
+      <div className="glass-card p-10 text-center max-w-lg mx-auto space-y-4">
+        <h2 className="text-2xl font-black text-amber-500">Finalize Required</h2>
+        <p className="text-slate-500">
+          Match is marked complete but results were not saved. Use manual finalize to update
+          standings and leaderboards.
+        </p>
+        {finalizeMessage && (
+          <p className="text-sm whitespace-pre-wrap text-red-400">{finalizeMessage}</p>
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            if (!match) return;
+            setBusy(true);
+            setFinalizeMessage(null);
+            try {
+              const su = await scoringUser();
+              const result = await manualFinalizeMatch(match.id, match, su);
+              setFinalizeMessage(result.summary ?? "Match finalized successfully.");
+              live.refresh();
+            } catch (error) {
+              setFinalizeMessage(formatLiveStartError(error));
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
+        >
+          {busy ? "Finalizing…" : "Finalize Match"}
+        </button>
       </div>
     );
   }
@@ -875,7 +929,58 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
           <History className="w-4 h-4" /> Restore
           <ChevronDown className="w-4 h-4" />
         </button>
+        {(finalizeGate.ok || live.innings.length >= 2) && (
+          <button
+            type="button"
+            disabled={busy || !finalizeGate.ok}
+            title={finalizeGate.reason}
+            onClick={async () => {
+              if (!match || !finalizeGate.ok) return;
+              if (
+                !window.confirm(
+                  "Finalize this match? This updates standings, leaderboards, and locks the result."
+                )
+              ) {
+                return;
+              }
+              setBusy(true);
+              setParticipantError(null);
+              try {
+                const su = await scoringUser();
+                const result = await manualFinalizeMatch(match.id, match, su);
+                setFinalizeMessage(result.summary ?? "Match finalized.");
+                live.refresh();
+              } catch (error) {
+                setParticipantError(formatLiveStartError(error));
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-700 text-white text-sm disabled:opacity-40"
+          >
+            Finalize Match
+          </button>
+        )}
       </div>
+
+      {finalizeMessage && (
+        <p className="text-sm text-emerald-400">{finalizeMessage}</p>
+      )}
+
+      <BallCorrectionPanel
+        balls={balls}
+        disabled={busy || match.status === "paused"}
+        onCorrect={async (ballId, action, reason) => {
+          if (!match || !innings) return;
+          const su = await scoringUser();
+          const result = await editBallDelivery(match, innings, balls, ballId, action, reason, su);
+          setBootstrappedInnings(result.innings);
+          setPendingBalls([]);
+          bumpAudit();
+        }}
+      />
+
+      <BallAuditHistory matchId={match.id} refreshKey={auditRefreshKey} />
 
       {restoreOpen && (
         <div className="glass-card p-4 flex flex-wrap items-end gap-3">

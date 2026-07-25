@@ -213,6 +213,10 @@ export interface BallAuditEntry {
     innings: Innings;
     ballCount: number;
   };
+  /** Populated for edit/delete corrections */
+  originalBall?: Ball;
+  updatedBall?: Ball;
+  reason?: string;
   createdBy: string;
   createdByEmail?: string;
   timestamp: string;

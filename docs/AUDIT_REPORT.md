@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-25  
 **Scope:** Live scoring, Firestore, realtime, statistics, admin, mobile, offline  
-**Build:** `npm run build` ✅ · **Tests:** `npm test` ✅ (4 tests)
+**Build:** `npm run build` ✅ · **Tests:** `npm test` ✅ (8 tests)
 
 ---
 
@@ -33,7 +33,7 @@ Live scoring failed primarily due to **Firestore rules/indexes not deployed**, *
 
 ## ✅ Working Modules (after fixes)
 
-- Admin live scorer (`AdminLiveScorer`) — ball-by-ball scoring, undo, restore, pause
+- Admin live scorer (`AdminLiveScorer`) — ball-by-ball scoring, undo, restore, pause, **manual finalize**, **ball correction with audit trail**
 - Scoring engine (`scoreBall`, extras, wickets, strike rotation)
 - Firestore batch writes (balls, innings, commentary, audit)
 - Realtime listeners (`useLiveMatch` — match, innings, balls, commentary)
@@ -54,11 +54,9 @@ Live scoring failed primarily due to **Firestore rules/indexes not deployed**, *
 |---------|--------|
 | Dead ball | Not in `ScoringAction` or UI |
 | Redo | Not implemented (`Redo2` icon unused on mobile) |
-| Edit ball | Not implemented |
 | Delete ball (single) | Only undo last ball |
 | End over (manual) | Engine-only on 6 legal balls |
 | Toss / playing XI picker UI | Auto first 11 from roster |
-| Manual finalize retry button | API exists; no admin UI button |
 | `scoreboard` Firestore collection | Rules exist; never written |
 | Full tournament UI simulation | Requires manual QA pass |
 
@@ -84,7 +82,9 @@ Live scoring failed primarily due to **Firestore rules/indexes not deployed**, *
 | `src/lib/firebase/firestore.ts` | `updateFixture`, balls subscription errors |
 | `src/lib/offline/sync.ts` | Match ID resolution, fresh replay, dedupe |
 | `src/lib/live/*` | match-doc-id, scoring-user, logger, resolve-playing-xis |
-| `src/components/scorer/admin-live-scorer.tsx` | Optimistic state, offline preview, debug panel |
+| `src/components/scorer/admin-live-scorer.tsx` | Optimistic state, offline preview, debug panel, finalize + correction UI |
+| `src/components/scorer/ball-correction-panel.tsx` | **New** — correct delivery with required reason |
+| `src/components/scorer/ball-audit-history.tsx` | **New** — before/after audit log display |
 | `src/app/match/.../mobile/page.tsx` | Full mobile scoring fixes |
 | `src/components/scoreboard/live-scoreboard.tsx` | Striker/non-striker/bowler display |
 | `src/components/dashboard/fixture-card.tsx` | Live link uses `fixture.id` |
@@ -131,6 +131,7 @@ Score button → handleScore → ctx() validation
 ```
 ✓ tests/innings-metrics.test.ts (1 test)
 ✓ tests/scoring-engine.test.ts (3 tests)
+✓ tests/manual-finalize.test.ts (4 tests)
 ✓ npm run build — success
 ```
 
@@ -144,8 +145,10 @@ Score button → handleScore → ctx() validation
 4. Undo last ball — verify rollback  
 5. Complete innings 1 — verify second innings starts with **other** team batting  
 6. Complete match — verify standings + fixture status `completed`  
-7. Mobile scorer — same flow with Google sign-in  
-8. Open debug panel — confirm listener status, no validation errors  
+7. **Manual Finalize** — if auto-finalize fails, use admin **Finalize Match** button  
+8. **Ball correction** — edit a recent delivery with reason; verify audit history shows before → after  
+9. Mobile scorer — same flow with Google sign-in  
+10. Open debug panel — confirm listener status, no validation errors  
 
 ---
 
@@ -154,11 +157,10 @@ Score button → handleScore → ctx() validation
 1. Deploy Firestore rules + indexes to production  
 2. Set Vercel env: `ADMIN_EMAILS`, `FIREBASE_SERVICE_ACCOUNT_JSON`  
 3. Protect `/api/seed` with admin auth  
-4. Add manual finalize button for failed auto-finalize  
-5. Implement dead ball / edit ball if required for tournament rules  
+4. Implement dead ball / redo if required for tournament rules  
 
 ---
 
 ## Confirmation
 
-**Live scoring path is fixed in code** and production build passes. End-to-end behavior in production depends on Firestore rules/indexes being **Enabled** and Vercel deploying this commit.
+**Live scoring path is fixed in code** and production build passes. Manual finalize and ball correction audit trail are implemented for tournament-day safety. End-to-end behavior in production depends on Firestore rules/indexes being **Enabled** and Vercel deploying this commit.
