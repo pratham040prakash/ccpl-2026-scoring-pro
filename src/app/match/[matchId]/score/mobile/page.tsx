@@ -17,7 +17,7 @@ import { queueOfflineAction, isOnline } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
 import { undoLastBall } from "@/lib/engine/live-scoring-service";
 import { generateId } from "@/lib/utils";
-import type { ScoringAction } from "@/types";
+import type { Innings, ScoringAction } from "@/types";
 
 export default function MobileScorerPage({
   params,
@@ -31,7 +31,7 @@ export default function MobileScorerPage({
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [bootstrappedInnings, setBootstrappedInnings] = useState<typeof currentInnings>(null);
+  const [bootstrappedInnings, setBootstrappedInnings] = useState<Innings | null>(null);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
