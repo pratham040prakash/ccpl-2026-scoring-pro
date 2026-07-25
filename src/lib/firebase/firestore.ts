@@ -234,7 +234,8 @@ export function subscribeToInnings(
 
 export function subscribeToBalls(
   inningsId: string,
-  callback: (balls: Ball[]) => void
+  callback: (balls: Ball[]) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
   if (!isFirebaseConfigured()) {
     callback([]);
@@ -244,6 +245,9 @@ export function subscribeToBalls(
     query(collection(db(), COL.balls), where("inningsId", "==", inningsId), orderBy("sequence")),
     (snap) => {
       callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Ball));
+    },
+    (err) => {
+      onError?.(err);
     }
   );
 }

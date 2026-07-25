@@ -51,7 +51,11 @@ export function formatLiveStartError(error: unknown): string {
   }
 
   if (lower.includes("failed-precondition") || lower.includes("index")) {
-    return "Firestore index missing. Deploy firestore.indexes.json or create the innings index in Firebase Console.";
+    return [
+      "Firestore index missing.",
+      "Create the index from the link in the browser console error, or run: npm run firebase:deploy:rules",
+      "Common indexes: innings (matchId + inningsNumber), balls (inningsId + sequence).",
+    ].join(" ");
   }
 
   return message;

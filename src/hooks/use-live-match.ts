@@ -21,6 +21,7 @@ import { useFixtures } from "./use-tournament-data";
 export interface UseLiveMatchResult extends LiveMatchState {
   loading: boolean;
   error: string | null;
+  ballsError: string | null;
   fixture?: Fixture;
   isLive: boolean;
   refresh: () => void;
@@ -61,6 +62,7 @@ export function useLiveMatch(matchId: string): UseLiveMatchResult {
   const [commentary, setCommentary] = useState<CommentaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ballsError, setBallsError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
   const docId = fixture?.matchDocId ?? fixture?.id ?? matchId;
@@ -121,7 +123,17 @@ export function useLiveMatch(matchId: string): UseLiveMatchResult {
   useEffect(() => {
     if (!currentInnings?.id || !isFirebaseConfigured()) return;
 
-    const unsub = subscribeToBalls(currentInnings.id, setBalls);
+    setBallsError(null);
+    const unsub = subscribeToBalls(
+      currentInnings.id,
+      (next) => {
+        setBalls(next);
+        setBallsError(null);
+      },
+      (err) => {
+        setBallsError(err.message || "Could not load balls");
+      }
+    );
     return () => unsub();
   }, [currentInnings?.id]);
 
@@ -165,7 +177,8 @@ export function useLiveMatch(matchId: string): UseLiveMatchResult {
     lastSixBalls,
     commentary,
     loading,
-    error,
+    error: error ?? ballsError,
+    ballsError,
     fixture,
     isLive: resolvedMatch?.status === "live",
     refresh: () => setTick((t) => t + 1),

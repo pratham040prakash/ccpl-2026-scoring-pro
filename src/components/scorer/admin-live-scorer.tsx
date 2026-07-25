@@ -10,7 +10,7 @@ import {
   History,
   ChevronDown,
 } from "lucide-react";
-import type { DismissalType, Innings, Match, ScoringAction, BatterScore, BowlerScore } from "@/types";
+import type { DismissalType, Innings, Match, ScoringAction, BatterScore, BowlerScore, Ball } from "@/types";
 import { cn, formatOvers, strikeRate } from "@/lib/utils";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
@@ -55,6 +55,34 @@ interface AdminLiveScorerProps {
   matchId: string;
 }
 
+function pickInnings(live: Innings | undefined, local: Innings | null): Innings | null | undefined {
+  if (!live && !local) return null;
+  if (!live) return local;
+  if (!local) return live;
+
+  const liveReady = Boolean(live.strikerId && live.nonStrikerId && live.bowlerId);
+  const localReady = Boolean(local.strikerId && local.nonStrikerId && local.bowlerId);
+  if (localReady && !liveReady) return local;
+  if (liveReady && !localReady) return live;
+
+  return (local.updatedAt ?? "") > (live.updatedAt ?? "") ? local : live;
+}
+
+function pickMatch(live: Match | null, local: Match | null): Match | null {
+  if (!live && !local) return null;
+  if (!live) return local;
+  if (!local) return live;
+  return (local.updatedAt ?? "") > (live.updatedAt ?? "") ? local : live;
+}
+
+function mergeBallLists(remote: Ball[], pending: Ball[]): Ball[] {
+  if (pending.length === 0) return remote;
+  const byId = new Map<string, Ball>();
+  for (const ball of remote) byId.set(ball.id, ball);
+  for (const ball of pending) byId.set(ball.id, ball);
+  return Array.from(byId.values()).sort((a, b) => a.sequence - b.sequence);
+}
+
 export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const { user, profile } = useAuth();
   const live = useLiveMatch(matchId);
@@ -73,35 +101,30 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [pickRole, setPickRole] = useState<"striker" | "non_striker" | "bowler" | null>(null);
   const [participantError, setParticipantError] = useState<string | null>(null);
   const [participantsSynced, setParticipantsSynced] = useState(false);
+  const [pendingBalls, setPendingBalls] = useState<Ball[]>([]);
 
   const fixture = live.fixture;
-  const match = bootstrappedMatch ?? live.match;
-  const innings = bootstrappedInnings ?? live.currentInnings;
-  const balls = live.balls;
+  const match = pickMatch(live.match, bootstrappedMatch);
+  const innings = pickInnings(live.currentInnings, bootstrappedInnings);
+  const balls = useMemo(
+    () => mergeBallLists(live.balls, pendingBalls),
+    [live.balls, pendingBalls]
+  );
 
   useEffect(() => {
     setParticipantsSynced(false);
     setPickRole(null);
     setParticipantError(null);
+    setPendingBalls([]);
   }, [innings?.id]);
 
   useEffect(() => {
-    const remote = live.currentInnings;
-    if (!remote) return;
-    const hasParticipants =
-      Boolean(remote.strikerId) &&
-      Boolean(remote.nonStrikerId) &&
-      Boolean(remote.bowlerId);
-    if (hasParticipants) {
-      setBootstrappedInnings(null);
-      setBootstrappedMatch(null);
+    if (pendingBalls.length === 0) return;
+    const remoteIds = new Set(live.balls.map((ball) => ball.id));
+    if (pendingBalls.every((ball) => remoteIds.has(ball.id))) {
+      setPendingBalls([]);
     }
-  }, [
-    live.currentInnings?.id,
-    live.currentInnings?.strikerId,
-    live.currentInnings?.nonStrikerId,
-    live.currentInnings?.bowlerId,
-  ]);
+  }, [live.balls, pendingBalls]);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
@@ -344,10 +367,14 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         });
       } else {
         const su = await scoringUser();
-        await applyScoringAction(match, innings, balls, action, context, su);
+        const result = await applyScoringAction(match, innings, balls, action, context, su);
+        setBootstrappedInnings(result.innings);
+        setPendingBalls((prev) => [...prev, result.ball]);
       }
       setWicketMode(false);
       setExtrasMode(null);
+    } catch (error) {
+      setParticipantError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -356,9 +383,16 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const handleUndo = async () => {
     if (!match || !innings || balls.length === 0 || busy) return;
     setBusy(true);
+    setParticipantError(null);
     try {
       const su = await scoringUser();
-      await undoLastBall(match, innings, balls, su);
+      const updated = await undoLastBall(match, innings, balls, su);
+      if (updated) {
+        setBootstrappedInnings(updated);
+        setPendingBalls([]);
+      }
+    } catch (error) {
+      setParticipantError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -419,7 +453,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     );
   }
 
-  if (!innings) {
+  if (!match || !innings) {
     return (
       <div className="glass-card p-10 text-center max-w-lg mx-auto space-y-3">
         <p className="text-slate-500">Loading live match…</p>
@@ -499,9 +533,9 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         </div>
       </div>
 
-      {(participantError || scoringBlockedReason) && (
+      {(participantError || scoringBlockedReason || live.ballsError) && (
         <div className="glass-card p-3 border border-amber-500/40 bg-amber-500/10 text-amber-100 text-sm">
-          {participantError ?? scoringBlockedReason}
+          {participantError ?? live.ballsError ?? scoringBlockedReason}
         </div>
       )}
 
