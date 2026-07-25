@@ -24,7 +24,7 @@ export function MatchScoringActions({
   compact = false,
 }: Props) {
   const router = useRouter();
-  const { profile, retryAdminBootstrap } = useAuth();
+  const { user, profile, retryAdminBootstrap } = useAuth();
   const live = useLiveMatch(fixture.id);
   const [busy, setBusy] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -99,19 +99,40 @@ export function MatchScoringActions({
       {permissionError && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm space-y-2">
           <p className="font-semibold text-red-600 dark:text-red-400">Firestore permissions fix</p>
-          <ol className="list-decimal list-inside text-slate-600 dark:text-slate-300 space-y-1">
+          {profile?.role === "administrator" || profile?.role === "scorer" ? (
+            <p className="text-slate-600 dark:text-slate-300">
+              Your Firestore user already has role <strong>{profile.role}</strong>. The app is
+              still blocked — usually Firestore rules are not deployed, or the live site uses a
+              different Firebase project than the console you edited.
+            </p>
+          ) : (
+            <p className="text-slate-600 dark:text-slate-300">
+              Set Firestore <strong>users / your uid / role</strong> to{" "}
+              <strong>administrator</strong>, then sign out and back in.
+            </p>
+          )}
+          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1">
             <li>
-              Firebase Console → Firestore → <strong>users</strong> → your account → set{" "}
-              <code className="text-xs">role</code> to <strong>administrator</strong>
+              Signed in as <strong>{profile?.email || "unknown"}</strong>
+              {user?.uid ? (
+                <>
+                  {" "}
+                  · uid <code className="text-xs">{user.uid}</code>
+                </>
+              ) : null}
             </li>
             <li>
-              Vercel env: <code className="text-xs">ADMIN_EMAILS</code> +{" "}
-              <code className="text-xs">FIREBASE_SERVICE_ACCOUNT_JSON</code>, then redeploy
+              Firebase project:{" "}
+              <code className="text-xs">
+                {process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "not set"}
+              </code>{" "}
+              — must match Firebase Console project id
             </li>
             <li>
-              Deploy rules locally: <code className="text-xs">npm run firebase:deploy:rules</code>
+              Deploy rules: <code className="text-xs">npm run firebase:deploy:rules</code> (or
+              Firebase Console → Firestore → Rules → Publish)
             </li>
-          </ol>
+          </ul>
           <button
             type="button"
             onClick={handleRetryRole}
