@@ -189,8 +189,10 @@ export function aggregatePlayerStatsFromBalls(
 
     for (const ball of matchBalls) {
       if (ball.isWicket && ball.dismissal === "caught" && ball.fielderId) {
-        const fielder = matchBalls.find((x) => x.bowlerId === ball.fielderId);
-        const name = fielder?.bowlerName ?? ball.fielderId;
+        const name =
+          matchBalls.find((x) => x.strikerId === ball.fielderId)?.strikerName ??
+          matchBalls.find((x) => x.bowlerId === ball.fielderId)?.bowlerName ??
+          ball.fielderId;
         ensure(ball.fielderId, name).catches++;
       }
       if (ball.isWicket && ball.dismissal === "run_out" && ball.fielderId) {

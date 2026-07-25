@@ -187,8 +187,8 @@ export function buildStoredScore(
     fixture.overs
   );
 
-  let winnerName = resolved.winnerName || row.winnerName;
-  let margin = row.margin || resolved.margin;
+  const winnerName = resolved.winnerName || row.winnerName;
+  const margin = row.margin || resolved.margin;
   let marginType = resolved.marginType;
 
   if (margin.toLowerCase().includes("wicket")) marginType = "wickets";

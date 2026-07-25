@@ -2,15 +2,14 @@ import type { Fixture } from "@/types";
 import { defaultPlayingXi } from "@/lib/live/player-roster";
 
 export function canStartLiveScoring(fixture: Fixture): { ok: true } | { ok: false; reason: string } {
-  if (fixture.placeholderA || fixture.placeholderB) {
-    return {
-      ok: false,
-      reason:
-        "This fixture uses placeholder teams (e.g. Seed 1 vs Seed 8). Pick a Round 1 match with real team names.",
-    };
-  }
-
   if (!fixture.teamAId?.trim() || !fixture.teamBId?.trim()) {
+    if (fixture.placeholderA || fixture.placeholderB) {
+      return {
+        ok: false,
+        reason:
+          "Knockout teams are not resolved yet. Complete and finalize the prior stage matches first.",
+      };
+    }
     return {
       ok: false,
       reason: "This fixture has no team IDs. Run Admin → Seed Database, then try again.",

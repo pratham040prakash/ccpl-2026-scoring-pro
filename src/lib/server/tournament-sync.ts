@@ -1,5 +1,9 @@
-import type { Ball, Innings, Match, PointsTableEntry, Team } from "@/types";
-import { calculatePointsTable } from "@/lib/engine/tournament";
+import type { Ball, Fixture, Innings, Match, Player, PointsTableEntry, Team } from "@/types";
+import {
+  calculatePointsTable,
+  deriveCurrentStage,
+  resolveKnockoutTeams,
+} from "@/lib/engine/tournament";
 import {
   aggregatePlayerStatsFromBalls,
   computeMatchResult,
@@ -83,6 +87,7 @@ export async function finalizeMatchOnServer(
   }
 
   await syncTournamentStandings(db);
+  await syncKnockoutFixtures(db);
   await syncLeaderboards(db);
   await writeMatchNotifications(db, match, result, mom, summary);
 
@@ -141,19 +146,103 @@ async function syncTournamentStandings(db: Firestore): Promise<void> {
   await batch.commit();
 }
 
+async function syncKnockoutFixtures(db: Firestore): Promise<void> {
+  const [fixturesSnap, matchesSnap, teamsSnap] = await Promise.all([
+    db.collection("fixtures").get(),
+    db.collection("matches").get(),
+    db.collection("teams").get(),
+  ]);
+
+  const fixtures = fixturesSnap.docs.map(
+    (d) => ({ id: d.id, ...d.data() }) as Fixture
+  );
+  const matches = matchesSnap.docs.map(
+    (d) => ({ id: d.id, ...d.data() }) as Match
+  );
+  const teams = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
+
+  const inningsMap: Record<string, Innings[]> = {};
+  for (const m of matches.filter((x) =>
+    ["completed", "locked", "published"].includes(x.status)
+  )) {
+    const innSnap = await db.collection("innings").where("matchId", "==", m.id).get();
+    inningsMap[m.id] = innSnap.docs.map(
+      (d) => ({ id: d.id, ...d.data() }) as Innings
+    );
+  }
+
+  const settingsSnap = await db.collection("settings").doc("tournament").get();
+  const settings = settingsSnap.data() ?? { pointsWin: 2, pointsTie: 1, pointsNr: 1 };
+
+  const table = calculatePointsTable(teams, matches, inningsMap, {
+    pointsWin: settings.pointsWin ?? 2,
+    pointsTie: settings.pointsTie ?? 1,
+    pointsNr: settings.pointsNr ?? 1,
+  });
+
+  const resolved = resolveKnockoutTeams(fixtures, matches, table, teams);
+  const now = new Date().toISOString();
+  const batch = db.batch();
+
+  for (const fixture of resolved) {
+    const original = fixtures.find((f) => f.id === fixture.id);
+    if (!original) continue;
+
+    const idsReady = Boolean(fixture.teamAId?.trim() && fixture.teamBId?.trim());
+    const idsChanged =
+      fixture.teamAId !== original.teamAId || fixture.teamBId !== original.teamBId;
+    const namesChanged =
+      fixture.teamAName !== original.teamAName || fixture.teamBName !== original.teamBName;
+
+    if (idsReady && (idsChanged || namesChanged)) {
+      batch.set(
+        db.collection("fixtures").doc(fixture.id),
+        {
+          teamAId: fixture.teamAId,
+          teamBId: fixture.teamBId,
+          teamAName: fixture.teamAName,
+          teamBName: fixture.teamBName,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    }
+  }
+
+  batch.set(
+    db.collection("settings").doc("tournament"),
+    { currentStage: deriveCurrentStage(resolved), updatedAt: now },
+    { merge: true }
+  );
+
+  await batch.commit();
+}
+
 async function syncLeaderboards(db: Firestore): Promise<void> {
   const ballsSnap = await db.collection("balls").get();
   const allBalls = ballsSnap.docs.map(
     (d) => ({ id: d.id, ...d.data() }) as Ball
   );
 
-  const { teams, players } = buildSeedData();
+  const { teams } = buildSeedData();
+  const [teamsSnap, playersSnap] = await Promise.all([
+    db.collection("teams").get(),
+    db.collection("players").get(),
+  ]);
+
+  const firestoreTeams: Team[] = teamsSnap.empty
+    ? teams
+    : teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
+  const firestorePlayers: Player[] = playersSnap.empty
+    ? buildSeedData().players
+    : playersSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Player);
+
   const teamNameByPlayer = new Map<
     string,
     { teamId: string; teamName: string }
   >();
-  for (const p of players) {
-    const team = teams.find((t) => t.id === p.teamId);
+  for (const p of firestorePlayers) {
+    const team = firestoreTeams.find((t) => t.id === p.teamId);
     teamNameByPlayer.set(p.id, {
       teamId: p.teamId,
       teamName: team?.name ?? "",

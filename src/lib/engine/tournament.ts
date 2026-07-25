@@ -7,7 +7,13 @@ import type {
   Team,
   TeamStats,
 } from "@/types";
-import { calculateNRR } from "@/lib/utils";
+import { calculateNRR, totalBalls } from "@/lib/utils";
+
+export { STAGE_ORDER };
+
+function inningsDecimalOvers(innings: Innings): number {
+  return totalBalls(innings.overs, innings.balls) / 6;
+}
 
 const STAGE_ORDER: MatchStage[] = [
   "round_1",
@@ -48,8 +54,17 @@ export function calculatePointsTable(
   }
 
   const completed = matches.filter(
-    (m) => m.status === "completed" || m.status === "locked" || m.status === "published"
+    (m) =>
+      m.stage === "round_1" &&
+      (m.status === "completed" || m.status === "locked" || m.status === "published")
   );
+
+  const oversForByTeam: Record<string, number> = {};
+  const oversAgainstByTeam: Record<string, number> = {};
+  for (const team of teams) {
+    oversForByTeam[team.id] = 0;
+    oversAgainstByTeam[team.id] = 0;
+  }
 
   for (const match of completed) {
     if (!match.result) continue;
@@ -67,10 +82,18 @@ export function calculatePointsTable(
     if (innA) {
       teamA.runsFor += innA.runs;
       teamA.runsAgainst += innB?.runs ?? 0;
+      oversForByTeam[match.teamAId] += inningsDecimalOvers(innA);
+      if (innB) {
+        oversAgainstByTeam[match.teamAId] += inningsDecimalOvers(innB);
+      }
     }
     if (innB) {
       teamB.runsFor += innB.runs;
       teamB.runsAgainst += innA?.runs ?? 0;
+      oversForByTeam[match.teamBId] += inningsDecimalOvers(innB);
+      if (innA) {
+        oversAgainstByTeam[match.teamBId] += inningsDecimalOvers(innA);
+      }
     }
 
     if (match.result.winnerId === match.teamAId) {
@@ -85,9 +108,8 @@ export function calculatePointsTable(
   }
 
   const entries = Object.values(table).map((entry) => {
-    const team = teams.find((t) => t.id === entry.teamId);
-    const oversFor = team?.stats.oversFor || entry.played * 6;
-    const oversAgainst = team?.stats.oversAgainst || entry.played * 6;
+    const oversFor = oversForByTeam[entry.teamId] ?? 0;
+    const oversAgainst = oversAgainstByTeam[entry.teamId] ?? 0;
     entry.nrr = calculateNRR(
       entry.runsFor,
       oversFor,
@@ -142,8 +164,12 @@ export function findBestLosingTeam(
 export function resolveKnockoutTeams(
   fixtures: Fixture[],
   matches: Match[],
-  pointsTable: PointsTableEntry[]
+  pointsTable: PointsTableEntry[],
+  teams: Team[] = []
 ): Fixture[] {
+  const teamName = (teamId: string, fallback: string) =>
+    teams.find((t) => t.id === teamId)?.name ?? fallback;
+
   return fixtures.map((fixture) => {
     const updated = { ...fixture };
 
@@ -171,8 +197,24 @@ export function resolveKnockoutTeams(
       if (seedB) updated.teamBId = seedB.teamId;
     }
 
+    if (updated.teamAId) {
+      updated.teamAName = teamName(updated.teamAId, updated.teamAName);
+    }
+    if (updated.teamBId) {
+      updated.teamBName = teamName(updated.teamBId, updated.teamBName);
+    }
+
     return updated;
   });
+}
+
+export function deriveCurrentStage(fixtures: Fixture[]): MatchStage {
+  for (const stage of STAGE_ORDER) {
+    if (!canProgressStage(stage, fixtures)) {
+      return stage;
+    }
+  }
+  return "final";
 }
 
 function resolvePlaceholder(
@@ -194,8 +236,8 @@ function resolvePlaceholder(
     return getWinnerOfMatchId(`R1-${matchNum}`, fixtures, matches);
   }
 
-  // QuarterFinal Winner 1 / QuaterFinal Winner 1
-  const qfWinner = placeholder.match(/quater?final\s+winner\s+(\d+)/i);
+  // QuarterFinal Winner 1 / QuaterFinal Winner 1 (typo in legacy seed data)
+  const qfWinner = placeholder.match(/quarter?final\s+winner\s+(\d+)/i);
   if (qfWinner) {
     return getWinnerOfMatchId(`QF${qfWinner[1]}`, fixtures, matches);
   }

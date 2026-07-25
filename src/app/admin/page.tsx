@@ -20,7 +20,7 @@ import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
 
 export default function AdminPage() {
-  const { profile, hasRole, loading, isDemo, isProduction, retryAdminBootstrap, signOut } = useAuth();
+  const { user, profile, hasRole, loading, isDemo, isProduction, retryAdminBootstrap, signOut } = useAuth();
   const { data: teams = [] } = useTeams();
   const { data: fixtures = [] } = useFixtures();
   const { scores } = useMatchResults();
@@ -106,7 +106,11 @@ export default function AdminPage() {
     setSeeding(true);
     setSeedResult("");
     try {
-      const res = await fetch("/api/seed", { method: "POST" });
+      const token = user ? await user.getIdToken() : null;
+      const res = await fetch("/api/seed", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       const data = await res.json();
       setSeedResult(data.message || "Seed completed");
     } catch {

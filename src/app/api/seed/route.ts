@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { buildSeedData } from "@/lib/seed";
+import { AdminAuthError, verifyAdminRequest } from "@/lib/server/verify-admin";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
   if (!isFirebaseConfigured()) {
     const data = buildSeedData();
     return NextResponse.json({
@@ -27,6 +28,18 @@ export async function POST() {
           "Firebase is configured but FIREBASE_SERVICE_ACCOUNT_JSON is missing. Add service account JSON to .env.local (see docs/FIREBASE_SETUP.md).",
       },
       { status: 400 }
+    );
+  }
+
+  try {
+    await verifyAdminRequest(request);
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+    }
+    return NextResponse.json(
+      { success: false, message: error instanceof Error ? error.message : String(error) },
+      { status: 401 }
     );
   }
 
