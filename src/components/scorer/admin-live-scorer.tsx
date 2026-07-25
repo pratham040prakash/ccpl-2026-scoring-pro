@@ -24,12 +24,19 @@ import {
   updateInningsParticipants,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
+import { scoreBall } from "@/lib/engine/scoring";
 import {
   ballsRemaining,
   isPowerplay,
   runsNeeded,
+  enrichInningsFromBalls,
+  rotateStrike,
 } from "@/lib/engine/innings-metrics";
-import { resolvePlayingXi, type RosterPlayer } from "@/lib/live/player-roster";
+import { type RosterPlayer } from "@/lib/live/player-roster";
+import { resolveBattingBowlingXis } from "@/lib/live/resolve-playing-xis";
+import { buildScoringUser } from "@/lib/live/scoring-user";
+import { logScoring } from "@/lib/live/scoring-logger";
+import { ScoringDebugPanel } from "@/components/scorer/scoring-debug-panel";
 import { BallTimelineStrip } from "@/components/scoreboard/ball-timeline";
 import { WicketFlow } from "@/components/scorer/wicket-flow";
 import { aggregateBatterScores, aggregateBowlerScores } from "@/lib/engine/statistics";
@@ -128,34 +135,28 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
-    check();
-    window.addEventListener("online", async () => {
+    const onOnline = async () => {
       setOffline(false);
-      if (user) await syncPendingActions(matchId, { uid: user.uid, email: user.email ?? undefined });
-    });
+      if (user) {
+        const su = await buildScoringUser(user);
+        await syncPendingActions(matchId, su, fixture ?? undefined);
+      }
+    };
+    check();
+    window.addEventListener("online", onOnline);
     window.addEventListener("offline", check);
     return () => {
-      window.removeEventListener("online", check);
+      window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", check);
     };
-  }, [matchId, user]);
+  }, [matchId, user, fixture]);
 
   const battingXi = useMemo(() => {
-    if (!fixture || !innings) return [];
-    const isTeamA = innings.teamId === fixture.teamAId;
-    return resolvePlayingXi(
-      isTeamA ? fixture.teamAName : fixture.teamBName,
-      isTeamA ? match?.playingXiA : match?.playingXiB
-    );
+    return resolveBattingBowlingXis(fixture, match, innings).battingXi;
   }, [fixture, innings, match?.playingXiA, match?.playingXiB]);
 
   const bowlingXi = useMemo(() => {
-    if (!fixture || !innings) return [];
-    const isTeamA = innings.teamId === fixture.teamAId;
-    return resolvePlayingXi(
-      isTeamA ? fixture.teamBName : fixture.teamAName,
-      isTeamA ? match?.playingXiB : match?.playingXiA
-    );
+    return resolveBattingBowlingXis(fixture, match, innings).bowlingXi;
   }, [fixture, innings, match?.playingXiA, match?.playingXiB]);
 
   const batters = useMemo(() => aggregateBatterScores(balls), [balls]);
@@ -240,11 +241,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     return null;
   }, [innings, battingXi, bowlingXi]);
 
-  const scoringUser = useCallback(async () => {
-    if (!user) return undefined;
-    const idToken = await user.getIdToken();
-    return { uid: user.uid, email: user.email ?? undefined, idToken };
-  }, [user]);
+  const scoringUser = useCallback(async () => buildScoringUser(user), [user]);
 
   const outBatterIds = useMemo(
     () => new Set(batters.filter((b) => b.isOut).map((b) => b.playerId)),
@@ -355,21 +352,46 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     setParticipantError(null);
     try {
       if (offline) {
+        const sequence = innings.nextSequence ?? balls.length;
+        const result = scoreBall({
+          match,
+          innings,
+          ...context,
+          action,
+          sequence,
+        });
+        const updatedPartial = { ...innings, ...result.updatedInnings };
+        const allBalls = [...balls, result.ball];
+        const metrics = enrichInningsFromBalls(updatedPartial, match, allBalls);
+        const strike = rotateStrike(context.strikerId, context.nonStrikerId, result.rotateStrike);
+        const preview: Innings = {
+          ...updatedPartial,
+          ...metrics,
+          strikerId: strike.strikerId,
+          nonStrikerId: strike.nonStrikerId,
+          bowlerId: context.bowlerId,
+          nextSequence: sequence + 1,
+          updatedAt: new Date().toISOString(),
+        };
+        setBootstrappedInnings(preview);
+        setPendingBalls((prev) => [...prev, result.ball]);
         await queueOfflineAction({
           id: generateId("pending"),
           matchId: match.id,
           inningsId: innings.id,
           action,
           ...context,
-          sequence: innings.nextSequence ?? balls.length,
+          sequence,
           createdAt: new Date().toISOString(),
           synced: false,
         });
+        logScoring("score_submitted", "Queued offline (local preview applied)", { sequence });
       } else {
         const su = await scoringUser();
         const result = await applyScoringAction(match, innings, balls, action, context, su);
         setBootstrappedInnings(result.innings);
         setPendingBalls((prev) => [...prev, result.ball]);
+        logScoring("score_submitted", "Ball applied online", { runs: result.ball.runs });
       }
       setWicketMode(false);
       setExtrasMode(null);
@@ -401,9 +423,10 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const handleRestore = async () => {
     if (!match || !innings || busy) return;
     setBusy(true);
+    setParticipantError(null);
     try {
       const su = await scoringUser();
-      await restoreToOver(
+      const updated = await restoreToOver(
         match,
         innings,
         balls,
@@ -411,7 +434,12 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         parseInt(restoreBall, 10) || 0,
         su
       );
+      setBootstrappedInnings(updated);
+      setPendingBalls([]);
       setRestoreOpen(false);
+      logScoring("restore", `Restored to ${restoreOver}.${restoreBall}`, { inningsId: innings.id });
+    } catch (error) {
+      setParticipantError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -804,6 +832,19 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       />
 
       {/* Admin controls */}
+      <ScoringDebugPanel
+        matchId={matchId}
+        match={match}
+        innings={innings}
+        balls={balls}
+        userRole={profile?.role}
+        userId={user?.uid}
+        firestoreError={live.error}
+        ballsError={live.ballsError}
+        networkOnline={!offline}
+        validationError={participantError ?? scoringBlockedReason ?? undefined}
+      />
+
       <div className="glass-card p-4 flex flex-wrap gap-2">
         <button
           type="button"

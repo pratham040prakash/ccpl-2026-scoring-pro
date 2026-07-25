@@ -98,9 +98,9 @@ export function FixtureCard({ fixture, compact }: FixtureCardProps) {
         </div>
       )}
 
-      {fixture.matchDocId && (
+      {(isLive || fixture.status === "completed") && (
         <Link
-          href={`/live/${fixture.matchDocId}`}
+          href={`/live/${fixture.id}`}
           className="mt-3 flex items-center justify-center gap-1 text-sm text-primary font-medium hover:underline"
         >
           View Live <ChevronRight className="w-4 h-4" />

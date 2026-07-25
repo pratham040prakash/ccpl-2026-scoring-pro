@@ -28,16 +28,19 @@ import {
   saveCommentary,
   saveInnings,
   updateMatch,
+  updateFixture,
   deleteBall,
   saveAuditEntry,
   createMatchDoc,
   getInnings,
+  getMatch,
 } from "@/lib/firebase/firestore";
 import { doc } from "firebase/firestore";
 import { cacheBall, cacheInnings, cacheMatch } from "@/lib/offline/store";
 import { aggregateBatterScores, aggregateBowlerScores } from "./statistics";
 import { detectLiveEvents } from "@/lib/live/live-events";
 import { finalizeMatchViaApi, syncLiveResultToLocalStorage } from "@/lib/live/finalize-match";
+import { logScoring } from "@/lib/live/scoring-logger";
 
 export interface ScoringContext {
   strikerId: string;
@@ -92,14 +95,10 @@ function fixtureToMatch(fixture: Fixture, battingTeamId: string): Match {
 
 export function createInitialInnings(match: Match, inningsNumber: 1 | 2): Innings {
   const now = new Date().toISOString();
-  const battingTeamId =
-    inningsNumber === 1
-      ? match.battingTeamId ?? match.teamAId
-      : match.bowlingTeamId ?? match.teamBId;
+  const battingTeamId = match.battingTeamId ?? match.teamAId;
+  const bowlingTeamId = match.bowlingTeamId ?? match.teamBId;
   const battingTeamName =
     battingTeamId === match.teamAId ? match.teamAName : match.teamBName;
-  const bowlingTeamId =
-    battingTeamId === match.teamAId ? match.teamBId : match.teamAId;
   const bowlingRoster =
     battingTeamId === match.teamAId
       ? defaultPlayingXi(match.teamBName)
@@ -166,6 +165,22 @@ export async function initializeLiveMatch(
     throw new Error(gate.reason);
   }
 
+  const matchId = fixture.matchDocId ?? fixture.id;
+
+  if (isFirebaseConfigured()) {
+    const existingInnings = await getInnings(matchId);
+    const activeFirst = existingInnings.find((i) => i.inningsNumber === 1 && !i.completed);
+    if (activeFirst) {
+      const existingMatch = await getMatch(matchId);
+      if (existingMatch) {
+        logScoring("firestore_read", "Reusing existing live match", { matchId });
+        await cacheMatch(existingMatch);
+        await cacheInnings(activeFirst);
+        return { match: existingMatch, innings: activeFirst };
+      }
+    }
+  }
+
   const batId = battingTeamId ?? fixture.teamAId;
   const match = fixtureToMatch(fixture, batId);
   const innings = createInitialInnings(match, 1);
@@ -174,6 +189,8 @@ export async function initializeLiveMatch(
     await createMatchDoc(match);
     await saveInnings(innings);
     await updateMatch(match.id, { status: "live" });
+    await updateFixture(fixture.id, { status: "live" });
+    logScoring("firestore_write", "Live match started", { matchId: match.id, inningsId: innings.id });
   }
 
   await cacheMatch(match);
@@ -273,6 +290,40 @@ export async function applyScoringAction(
     timestamp: new Date().toISOString(),
   };
 
+  const postBallCommit = async () => {
+    await cacheBall(ball);
+    await cacheInnings(updatedInnings);
+
+    const priorBatters = aggregateBatterScores(existingBalls);
+    const priorBowlers = aggregateBowlerScores(existingBalls);
+    const priorBatterRuns =
+      priorBatters.find((b) => b.playerId === ctx.strikerId)?.runs ?? 0;
+    const priorBowlerWickets =
+      priorBowlers.find((b) => b.playerId === ctx.bowlerId)?.wickets ?? 0;
+
+    const events = detectLiveEvents(
+      ball,
+      action,
+      priorBatterRuns,
+      priorBowlerWickets,
+      result.completeInnings,
+      matchComplete
+    );
+    if (typeof window !== "undefined" && events.length) {
+      window.dispatchEvent(new CustomEvent("ccpl-live-event", { detail: events }));
+    }
+
+    if (updatedInnings.partnership?.runs === 50) {
+      await saveCommentary({
+        id: generateId("cmt"),
+        matchId: match.id,
+        text: getMilestoneCommentary("partnership", "", 50),
+        type: "milestone",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
   if (isFirebaseConfigured()) {
     const db = getFirebaseDb();
     const batch = writeBatch(db);
@@ -281,69 +332,54 @@ export async function applyScoringAction(
     batch.set(doc(db, COL.commentary, commentaryEntry.id), commentaryEntry);
     batch.set(doc(db, COL.ballAudit, auditEntry.id), auditEntry);
 
-    if (result.completeInnings) {
-      if (innings.inningsNumber === 1) {
-        batch.update(doc(db, COL.matches, match.id), {
-          target: updatedInnings.runs + 1,
-          updatedAt: new Date().toISOString(),
-        });
-        await batch.commit();
-        await startSecondInnings(
-          { ...match, target: updatedInnings.runs + 1 },
-          updatedInnings
-        );
-        return { ball, innings: updatedInnings };
-      }
+    if (result.completeInnings && innings.inningsNumber === 1) {
       batch.update(doc(db, COL.matches, match.id), {
-        status: "completed",
+        target: updatedInnings.runs + 1,
         updatedAt: new Date().toISOString(),
       });
     }
 
     await batch.commit();
+    logScoring("firestore_write", "Ball scored", {
+      matchId: match.id,
+      inningsId: innings.id,
+      sequence,
+      runs: ball.runs,
+    });
+
+    await postBallCommit();
+
+    if (result.completeInnings && innings.inningsNumber === 1) {
+      await startSecondInnings(
+        { ...match, target: updatedInnings.runs + 1 },
+        updatedInnings
+      );
+      return { ball, innings: updatedInnings };
+    }
   } else {
     await saveBall(ball);
     await saveInnings(updatedInnings);
     await saveCommentary(commentaryEntry);
     await saveAuditEntry(auditEntry);
+    await postBallCommit();
   }
 
-  await cacheBall(ball);
-  await cacheInnings(updatedInnings);
-
-  const priorBatters = aggregateBatterScores(existingBalls);
-  const priorBowlers = aggregateBowlerScores(existingBalls);
-  const priorBatterRuns =
-    priorBatters.find((b) => b.playerId === ctx.strikerId)?.runs ?? 0;
-  const priorBowlerWickets =
-    priorBowlers.find((b) => b.playerId === ctx.bowlerId)?.wickets ?? 0;
-
-  const events = detectLiveEvents(
-    ball,
-    action,
-    priorBatterRuns,
-    priorBowlerWickets,
-    result.completeInnings,
-    matchComplete
-  );
-  if (typeof window !== "undefined" && events.length) {
-    window.dispatchEvent(new CustomEvent("ccpl-live-event", { detail: events }));
-  }
-
-  if (matchComplete && user?.idToken) {
-    await finalizeMatchViaApi(match.id, user.idToken);
+  if (matchComplete) {
+    if (!user?.idToken) {
+      throw new Error(
+        "Sign in again to finalize the match and update standings."
+      );
+    }
+    const fin = await finalizeMatchViaApi(match.id, user.idToken);
+    logScoring("finalize", fin.success ? "Match finalized" : "Finalize failed", {
+      matchId: match.id,
+      message: fin.message,
+    });
+    if (!fin.success) {
+      throw new Error(fin.message ?? "Failed to finalize match and update standings.");
+    }
     const allInnings = await getInnings(match.id);
     syncLiveResultToLocalStorage(match, allInnings);
-  }
-
-  if (updatedInnings.partnership.runs === 50) {
-    await saveCommentary({
-      id: generateId("cmt"),
-      matchId: match.id,
-      text: getMilestoneCommentary("partnership", "", 50),
-      type: "milestone",
-      timestamp: new Date().toISOString(),
-    });
   }
 
   return { ball, innings: updatedInnings };
@@ -397,13 +433,29 @@ export async function undoLastBall(
 
 export async function startSecondInnings(match: Match, firstInnings: Innings): Promise<Innings> {
   const target = firstInnings.runs + 1;
-  await updateMatch(match.id, { target, battingTeamId: match.bowlingTeamId, bowlingTeamId: match.battingTeamId });
-  const innings = createInitialInnings(
-    { ...match, target, battingTeamId: match.bowlingTeamId, bowlingTeamId: match.battingTeamId },
-    2
-  );
+  const swapped = {
+    ...match,
+    target,
+    battingTeamId: match.bowlingTeamId,
+    bowlingTeamId: match.battingTeamId,
+  };
+
+  const existing = await getInnings(match.id);
+  const activeSecond = existing.find((i) => i.inningsNumber === 2 && !i.completed);
+  if (activeSecond) {
+    logScoring("firestore_read", "Reusing existing second innings", { inningsId: activeSecond.id });
+    return activeSecond;
+  }
+
+  await updateMatch(match.id, {
+    target,
+    battingTeamId: swapped.battingTeamId,
+    bowlingTeamId: swapped.bowlingTeamId,
+  });
+  const innings = createInitialInnings(swapped, 2);
   await saveInnings(innings);
   await cacheInnings(innings);
+  logScoring("firestore_write", "Second innings started", { inningsId: innings.id, target });
   return innings;
 }
 

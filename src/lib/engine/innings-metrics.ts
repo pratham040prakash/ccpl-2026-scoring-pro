@@ -43,9 +43,15 @@ export function computePartnership(
 }
 
 function getBallsSinceLastWicket(balls: Ball[]): Ball[] {
-  const lastWicketIdx = [...balls].reverse().findIndex((b) => b.isWicket);
-  if (lastWicketIdx === -1) return balls;
-  return balls.slice(balls.length - lastWicketIdx);
+  let lastIdx = -1;
+  for (let i = balls.length - 1; i >= 0; i--) {
+    if (balls[i].isWicket) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx === -1) return balls;
+  return balls.slice(lastIdx + 1);
 }
 
 export function computeLastWicket(balls: Ball[]): Innings["lastWicket"] | undefined {

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { MobileScorer } from "@/components/scorer/mobile-scorer";
@@ -10,15 +10,26 @@ import { formatOvers } from "@/lib/utils";
 import {
   applyScoringAction,
   initializeLiveMatch,
+  undoLastBall,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
-import { resolvePlayingXi } from "@/lib/live/player-roster";
+import { resolveBattingBowlingXis } from "@/lib/live/resolve-playing-xis";
+import { buildScoringUser } from "@/lib/live/scoring-user";
 import { queueOfflineAction, isOnline } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
-import { undoLastBall } from "@/lib/engine/live-scoring-service";
 import { generateId } from "@/lib/utils";
 import { formatLiveStartError } from "@/lib/live/match-start";
-import type { Innings, ScoringAction } from "@/types";
+import { scoreBall } from "@/lib/engine/scoring";
+import { enrichInningsFromBalls, rotateStrike } from "@/lib/engine/innings-metrics";
+import { logScoring } from "@/lib/live/scoring-logger";
+import type { Ball, Innings, ScoringAction } from "@/types";
+
+function pickInnings(live: Innings | undefined, local: Innings | null): Innings | null | undefined {
+  if (!live && !local) return null;
+  if (!live) return local;
+  if (!local) return live;
+  return (local.updatedAt ?? "") > (live.updatedAt ?? "") ? local : live;
+}
 
 export default function MobileScorerPage({
   params,
@@ -28,18 +39,35 @@ export default function MobileScorerPage({
   const { matchId } = use(params);
   const { user, profile } = useAuth();
   const live = useLiveMatch(matchId);
-  const { fixture, match, currentInnings, balls } = live;
+  const { fixture, match, currentInnings, balls: liveBalls } = live;
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [scoreError, setScoreError] = useState<string | null>(null);
   const [bootstrappedInnings, setBootstrappedInnings] = useState<Innings | null>(null);
+  const [pendingBalls, setPendingBalls] = useState<Ball[]>([]);
+
+  const activeInnings = pickInnings(currentInnings, bootstrappedInnings);
+  const balls = useMemo(() => {
+    const byId = new Map<string, Ball>();
+    for (const b of liveBalls) byId.set(b.id, b);
+    for (const b of pendingBalls) byId.set(b.id, b);
+    return Array.from(byId.values()).sort((a, b) => a.sequence - b.sequence);
+  }, [liveBalls, pendingBalls]);
+
+  useEffect(() => {
+    setPendingBalls([]);
+    setBootstrappedInnings(null);
+  }, [activeInnings?.id]);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
     const onOnline = async () => {
       setOffline(false);
       if (user) {
-        await syncPendingActions(matchId, { uid: user.uid, email: user.email ?? undefined });
+        const su = await buildScoringUser(user);
+        await syncPendingActions(matchId, su, fixture ?? undefined);
+        live.refresh();
       }
     };
     check();
@@ -49,9 +77,7 @@ export default function MobileScorerPage({
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", check);
     };
-  }, [matchId, user]);
-
-  const activeInnings = bootstrappedInnings ?? currentInnings;
+  }, [matchId, user, fixture]);
 
   const handleStart = async () => {
     if (!fixture) return;
@@ -72,11 +98,7 @@ export default function MobileScorerPage({
     if (!activeInnings?.strikerId || !activeInnings.nonStrikerId || !activeInnings.bowlerId) {
       return null;
     }
-    const battingXi = resolvePlayingXi(activeInnings.teamName, match?.playingXiA);
-    const bowlingName =
-      activeInnings.teamId === fixture?.teamAId ? fixture?.teamBName : fixture?.teamAName;
-    const bowlingXi = resolvePlayingXi(bowlingName ?? "", match?.playingXiB);
-
+    const { battingXi, bowlingXi } = resolveBattingBowlingXis(fixture, match, activeInnings);
     const s = battingXi.find((p) => p.id === activeInnings.strikerId);
     const ns = battingXi.find((p) => p.id === activeInnings.nonStrikerId);
     const bw = bowlingXi.find((p) => p.id === activeInnings.bowlerId);
@@ -96,25 +118,50 @@ export default function MobileScorerPage({
     async (action: ScoringAction) => {
       if (!match || !activeInnings || busy) return;
       const ctx = getContext();
-      if (!ctx) return;
+      if (!ctx) {
+        setScoreError("Set striker, non-striker, and bowler before scoring.");
+        return;
+      }
 
       setBusy(true);
+      setScoreError(null);
       try {
-        const userMeta = user ? { uid: user.uid, email: user.email ?? undefined } : undefined;
         if (offline) {
+          const sequence = activeInnings.nextSequence ?? balls.length;
+          const result = scoreBall({ match, innings: activeInnings, ...ctx, action, sequence });
+          const updatedPartial = { ...activeInnings, ...result.updatedInnings };
+          const allBalls = [...balls, result.ball];
+          const metrics = enrichInningsFromBalls(updatedPartial, match, allBalls);
+          const strike = rotateStrike(ctx.strikerId, ctx.nonStrikerId, result.rotateStrike);
+          setBootstrappedInnings({
+            ...updatedPartial,
+            ...metrics,
+            strikerId: strike.strikerId,
+            nonStrikerId: strike.nonStrikerId,
+            bowlerId: ctx.bowlerId,
+            nextSequence: sequence + 1,
+            updatedAt: new Date().toISOString(),
+          });
+          setPendingBalls((prev) => [...prev, result.ball]);
           await queueOfflineAction({
             id: generateId("pending"),
             matchId: match.id,
             inningsId: activeInnings.id,
             action,
             ...ctx,
-            sequence: activeInnings.nextSequence ?? balls.length,
+            sequence,
             createdAt: new Date().toISOString(),
             synced: false,
           });
         } else {
-          await applyScoringAction(match, activeInnings, balls, action, ctx, userMeta);
+          const su = await buildScoringUser(user);
+          const result = await applyScoringAction(match, activeInnings, balls, action, ctx, su);
+          setBootstrappedInnings(result.innings);
+          setPendingBalls((prev) => [...prev, result.ball]);
+          logScoring("score_submitted", "Mobile ball scored", { runs: result.ball.runs });
         }
+      } catch (error) {
+        setScoreError(formatLiveStartError(error));
       } finally {
         setBusy(false);
       }
@@ -125,13 +172,16 @@ export default function MobileScorerPage({
   const handleUndo = useCallback(async () => {
     if (!match || !activeInnings || balls.length === 0 || busy) return;
     setBusy(true);
+    setScoreError(null);
     try {
-      await undoLastBall(
-        match,
-        activeInnings,
-        balls,
-        user ? { uid: user.uid, email: user.email ?? undefined } : undefined
-      );
+      const su = await buildScoringUser(user);
+      const updated = await undoLastBall(match, activeInnings, balls, su);
+      if (updated) {
+        setBootstrappedInnings(updated);
+        setPendingBalls([]);
+      }
+    } catch (error) {
+      setScoreError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -196,6 +246,9 @@ export default function MobileScorerPage({
             )}
           </div>
         </div>
+        {(scoreError || live.ballsError) && (
+          <p className="text-amber-400 text-xs mt-2 text-center">{scoreError ?? live.ballsError}</p>
+        )}
       </div>
 
       <MobileScorer

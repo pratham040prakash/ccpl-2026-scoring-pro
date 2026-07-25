@@ -43,6 +43,18 @@ export function LiveScoreboard({
   const crr = innings.runRate.toFixed(2);
   const rrr = innings.requiredRunRate?.toFixed(2);
 
+  const creaseBatters = [innings.strikerId, innings.nonStrikerId]
+    .filter((id): id is string => Boolean(id))
+    .map((id) => batters.find((b) => b.playerId === id))
+    .filter((b): b is BatterScore => Boolean(b));
+
+  const displayBatters =
+    creaseBatters.length > 0 ? creaseBatters : batters.filter((b) => !b.isOut).slice(0, 2);
+
+  const currentBowler = innings.bowlerId
+    ? bowlers.find((b) => b.playerId === innings.bowlerId) ?? bowlers[0]
+    : bowlers[0];
+
   return (
     <div className="space-y-4">
       <motion.div
@@ -80,9 +92,12 @@ export function LiveScoreboard({
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="glass-card p-4">
           <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider text-slate-500">Batters</h4>
-          {batters.filter((b) => !b.isOut).slice(0, 2).map((b) => (
+          {displayBatters.map((b) => (
             <div key={b.playerId} className="flex justify-between py-2 border-b border-slate-200/10 last:border-0">
-              <span className="font-medium">{b.playerName}*</span>
+              <span className="font-medium">
+                {b.playerName}
+                {b.playerId === innings.strikerId ? "*" : b.playerId === innings.nonStrikerId ? "†" : ""}
+              </span>
               <span className="font-mono">{b.runs} ({b.balls})</span>
             </div>
           ))}
@@ -95,14 +110,14 @@ export function LiveScoreboard({
 
         <div className="glass-card p-4">
           <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider text-slate-500">Bowler</h4>
-          {bowlers.slice(0, 1).map((b) => (
-            <div key={b.playerId} className="flex justify-between py-2">
-              <span className="font-medium">{b.playerName}</span>
+          {currentBowler && (
+            <div key={currentBowler.playerId} className="flex justify-between py-2">
+              <span className="font-medium">{currentBowler.playerName}</span>
               <span className="font-mono">
-                {Math.floor(b.balls / 6)}.{b.balls % 6}-{b.runs}-{b.wickets}
+                {Math.floor(currentBowler.balls / 6)}.{currentBowler.balls % 6}-{currentBowler.runs}-{currentBowler.wickets}
               </span>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

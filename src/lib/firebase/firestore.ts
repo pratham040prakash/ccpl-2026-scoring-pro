@@ -256,6 +256,11 @@ export async function updateMatch(id: string, data: Partial<Match>): Promise<voi
   await updateDoc(doc(db(), COL.matches, id), { ...data, updatedAt: new Date().toISOString() });
 }
 
+export async function updateFixture(id: string, data: Partial<Fixture>): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  await updateDoc(doc(db(), COL.fixtures, id), { ...data, updatedAt: new Date().toISOString() });
+}
+
 export async function saveBall(ball: Ball): Promise<void> {
   await setDoc(doc(db(), COL.balls, ball.id), ball);
 }

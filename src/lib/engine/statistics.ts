@@ -24,12 +24,30 @@ export function aggregateBatterScores(balls: Ball[]): BatterScore[] {
     if (ball.batsmanRuns === 6) existing.sixes++;
     existing.strikeRate = strikeRate(existing.runs, existing.balls);
 
-    if (ball.isWicket && ball.dismissedPlayerId === ball.strikerId) {
-      existing.isOut = true;
-      existing.dismissal = ball.dismissal;
-    }
-
     map.set(ball.strikerId, existing);
+
+    if (ball.isWicket && ball.dismissedPlayerId) {
+      const dismissed =
+        map.get(ball.dismissedPlayerId) ||
+        (ball.dismissedPlayerId === ball.strikerId
+          ? existing
+          : {
+              playerId: ball.dismissedPlayerId,
+              playerName:
+                ball.dismissedPlayerId === ball.nonStrikerId
+                  ? ball.nonStrikerName
+                  : ball.strikerName,
+              runs: 0,
+              balls: 0,
+              fours: 0,
+              sixes: 0,
+              strikeRate: 0,
+              isOut: false,
+            });
+      dismissed.isOut = true;
+      dismissed.dismissal = ball.dismissal;
+      map.set(ball.dismissedPlayerId, dismissed);
+    }
   }
 
   return Array.from(map.values()).sort((a, b) => b.runs - a.runs);

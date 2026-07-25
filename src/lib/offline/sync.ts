@@ -1,4 +1,4 @@
-import type { Match, ScoringAction } from "@/types";
+import type { ScoringAction } from "@/types";
 import {
   applyScoringAction,
   type ScoringContext,
@@ -10,28 +10,53 @@ import {
   type PendingAction,
 } from "@/lib/offline/store";
 import { getMatch, getInnings, getBalls } from "@/lib/firebase/firestore";
+import { logScoring } from "@/lib/live/scoring-logger";
+import { resolveMatchDocId } from "@/lib/live/match-doc-id";
+import type { Fixture } from "@/types";
 
 export async function syncPendingActions(
-  matchId: string,
-  user?: ScoringUser
+  routeMatchId: string,
+  user?: ScoringUser,
+  fixture?: Pick<Fixture, "id" | "matchDocId">
 ): Promise<number> {
-  const pending = (await getPendingActions(matchId))
+  const matchDocId = resolveMatchDocId(fixture) || routeMatchId;
+  const pending = (await getPendingActions(matchDocId))
+    .concat(await getPendingActions(routeMatchId))
     .filter((p) => !p.synced)
     .sort((a, b) => a.sequence - b.sequence);
 
-  if (pending.length === 0) return 0;
+  const seen = new Set<string>();
+  const unique = pending.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
 
-  const match = await getMatch(matchId);
+  if (unique.length === 0) return 0;
+
+  let match = await getMatch(matchDocId);
+  if (!match && routeMatchId !== matchDocId) {
+    match = await getMatch(routeMatchId);
+  }
   if (!match) return 0;
 
-  const inningsList = await getInnings(matchId);
+  let inningsList = await getInnings(match.id);
   let synced = 0;
 
-  for (const action of pending) {
-    const innings = inningsList.find((i) => i.id === action.inningsId);
+  for (const action of unique) {
+    let innings = inningsList.find((i) => i.id === action.inningsId);
+    if (!innings) {
+      innings = inningsList.find((i) => !i.completed) ?? inningsList[inningsList.length - 1];
+    }
     if (!innings) continue;
 
     const balls = await getBalls(innings.id);
+    const already = balls.some((b) => b.sequence === action.sequence);
+    if (already) {
+      await markActionSynced(action.id);
+      continue;
+    }
+
     const ctx: ScoringContext = {
       strikerId: action.strikerId,
       strikerName: action.strikerName,
@@ -43,7 +68,9 @@ export async function syncPendingActions(
 
     await applyScoringAction(match, innings, balls, action.action, ctx, user);
     await markActionSynced(action.id);
+    inningsList = await getInnings(match.id);
     synced++;
+    logScoring("sync", "Replayed offline ball", { sequence: action.sequence, matchId: match.id });
   }
 
   return synced;
@@ -62,7 +89,7 @@ export function pendingToContext(action: PendingAction): ScoringContext {
 
 export async function queueOrApply(
   online: boolean,
-  match: Match,
+  match: import("@/types").Match,
   innings: import("@/types").Innings,
   balls: import("@/types").Ball[],
   action: ScoringAction,

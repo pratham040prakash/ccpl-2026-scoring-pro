@@ -19,7 +19,7 @@ export default function LiveMatchPage({
 }) {
   const { matchId } = use(params);
   const live = useLiveMatch(matchId);
-  useLiveNotifications(matchId);
+  useLiveNotifications(live.match?.id ?? matchId);
   const { fixture, match, currentInnings, balls, batters, bowlers, lastSixBalls, commentary, loading } = live;
 
   if (loading && !currentInnings) {
