@@ -13,6 +13,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirebaseDb, isFirebaseConfigured } from "./config";
+import { sanitizeForFirestore } from "./sanitize";
 import type {
   Announcement,
   Ball,
@@ -179,11 +180,11 @@ export function subscribeToCommentary(
 }
 
 export async function createMatchDoc(match: Match): Promise<void> {
-  await setDoc(doc(db(), COL.matches, match.id), match);
+  await setDoc(doc(db(), COL.matches, match.id), sanitizeForFirestore(match));
 }
 
 export async function saveAuditEntry(entry: BallAuditEntry): Promise<void> {
-  await setDoc(doc(db(), COL.ballAudit, entry.id), entry);
+  await setDoc(doc(db(), COL.ballAudit, entry.id), sanitizeForFirestore(entry));
 }
 
 export async function getAuditLog(matchId: string): Promise<BallAuditEntry[]> {
@@ -262,7 +263,7 @@ export async function updateFixture(id: string, data: Partial<Fixture>): Promise
 }
 
 export async function saveBall(ball: Ball): Promise<void> {
-  await setDoc(doc(db(), COL.balls, ball.id), ball);
+  await setDoc(doc(db(), COL.balls, ball.id), sanitizeForFirestore(ball));
 }
 
 export async function deleteBall(ballId: string): Promise<void> {
@@ -271,11 +272,11 @@ export async function deleteBall(ballId: string): Promise<void> {
 }
 
 export async function saveInnings(innings: Innings): Promise<void> {
-  await setDoc(doc(db(), COL.innings, innings.id), innings, { merge: true });
+  await setDoc(doc(db(), COL.innings, innings.id), sanitizeForFirestore(innings), { merge: true });
 }
 
 export async function saveCommentary(entry: CommentaryEntry): Promise<void> {
-  await setDoc(doc(db(), COL.commentary, entry.id), entry);
+  await setDoc(doc(db(), COL.commentary, entry.id), sanitizeForFirestore(entry));
 }
 
 export interface LiveNotificationDoc {

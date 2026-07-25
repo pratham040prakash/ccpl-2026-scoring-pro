@@ -1,4 +1,4 @@
-import { writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import type {
   Ball,
   BallAuditEntry,
@@ -35,7 +35,7 @@ import {
   getInnings,
   getMatch,
 } from "@/lib/firebase/firestore";
-import { doc } from "firebase/firestore";
+import { sanitizeForFirestore } from "@/lib/firebase/sanitize";
 import { cacheBall, cacheInnings, cacheMatch } from "@/lib/offline/store";
 import { aggregateBatterScores, aggregateBowlerScores } from "./statistics";
 import { detectLiveEvents } from "@/lib/live/live-events";
@@ -336,10 +336,10 @@ export async function applyScoringAction(
   if (isFirebaseConfigured()) {
     const db = getFirebaseDb();
     const batch = writeBatch(db);
-    batch.set(doc(db, COL.balls, ball.id), ball);
-    batch.set(doc(db, COL.innings, updatedInnings.id), updatedInnings, { merge: true });
-    batch.set(doc(db, COL.commentary, commentaryEntry.id), commentaryEntry);
-    batch.set(doc(db, COL.ballAudit, auditEntry.id), auditEntry);
+    batch.set(doc(db, COL.balls, ball.id), sanitizeForFirestore(ball));
+    batch.set(doc(db, COL.innings, updatedInnings.id), sanitizeForFirestore(updatedInnings), { merge: true });
+    batch.set(doc(db, COL.commentary, commentaryEntry.id), sanitizeForFirestore(commentaryEntry));
+    batch.set(doc(db, COL.ballAudit, auditEntry.id), sanitizeForFirestore(auditEntry));
 
     if (result.completeInnings && innings.inningsNumber === 1) {
       batch.update(doc(db, COL.matches, match.id), {
