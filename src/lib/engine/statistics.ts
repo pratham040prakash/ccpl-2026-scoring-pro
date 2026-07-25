@@ -5,31 +5,31 @@ export function aggregateBatterScores(balls: Ball[]): BatterScore[] {
   const map = new Map<string, BatterScore>();
 
   for (const ball of balls) {
-    if (ball.batsmanRuns > 0 || ball.isWicket) {
-      const existing = map.get(ball.strikerId) || {
-        playerId: ball.strikerId,
-        playerName: ball.strikerName,
-        runs: 0,
-        balls: 0,
-        fours: 0,
-        sixes: 0,
-        strikeRate: 0,
-        isOut: false,
-      };
+    if (!ball.isLegalDelivery && ball.batsmanRuns === 0 && !ball.isWicket) continue;
 
-      if (ball.isLegalDelivery) existing.balls++;
-      existing.runs += ball.batsmanRuns;
-      if (ball.batsmanRuns === 4) existing.fours++;
-      if (ball.batsmanRuns === 6) existing.sixes++;
-      existing.strikeRate = strikeRate(existing.runs, existing.balls);
+    const existing = map.get(ball.strikerId) || {
+      playerId: ball.strikerId,
+      playerName: ball.strikerName,
+      runs: 0,
+      balls: 0,
+      fours: 0,
+      sixes: 0,
+      strikeRate: 0,
+      isOut: false,
+    };
 
-      if (ball.isWicket && ball.dismissedPlayerId === ball.strikerId) {
-        existing.isOut = true;
-        existing.dismissal = ball.dismissal;
-      }
+    if (ball.isLegalDelivery) existing.balls++;
+    existing.runs += ball.batsmanRuns;
+    if (ball.batsmanRuns === 4) existing.fours++;
+    if (ball.batsmanRuns === 6) existing.sixes++;
+    existing.strikeRate = strikeRate(existing.runs, existing.balls);
 
-      map.set(ball.strikerId, existing);
+    if (ball.isWicket && ball.dismissedPlayerId === ball.strikerId) {
+      existing.isOut = true;
+      existing.dismissal = ball.dismissal;
     }
+
+    map.set(ball.strikerId, existing);
   }
 
   return Array.from(map.values()).sort((a, b) => b.runs - a.runs);

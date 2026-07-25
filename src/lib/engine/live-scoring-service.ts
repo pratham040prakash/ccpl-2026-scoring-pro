@@ -139,6 +139,24 @@ export function createInitialInnings(match: Match, inningsNumber: 1 | 2): Inning
   };
 }
 
+export async function updateInningsParticipants(
+  innings: Innings,
+  updates: Partial<Pick<Innings, "strikerId" | "nonStrikerId" | "bowlerId">>
+): Promise<Innings> {
+  const updated: Innings = {
+    ...innings,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (isFirebaseConfigured()) {
+    await saveInnings(updated);
+  }
+
+  await cacheInnings(updated);
+  return updated;
+}
+
 export async function initializeLiveMatch(
   fixture: Fixture,
   battingTeamId?: string

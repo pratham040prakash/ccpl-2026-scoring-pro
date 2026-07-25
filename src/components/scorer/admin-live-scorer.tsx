@@ -10,7 +10,7 @@ import {
   History,
   ChevronDown,
 } from "lucide-react";
-import type { DismissalType, Innings, Match, ScoringAction } from "@/types";
+import type { DismissalType, Innings, Match, ScoringAction, BatterScore, BowlerScore } from "@/types";
 import { cn, formatOvers, strikeRate } from "@/lib/utils";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
@@ -21,6 +21,7 @@ import {
   restoreToOver,
   pauseMatch,
   resumeMatch,
+  updateInningsParticipants,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
 import {
@@ -28,7 +29,7 @@ import {
   isPowerplay,
   runsNeeded,
 } from "@/lib/engine/innings-metrics";
-import { resolvePlayingXi } from "@/lib/live/player-roster";
+import { resolvePlayingXi, type RosterPlayer } from "@/lib/live/player-roster";
 import { BallTimelineStrip } from "@/components/scoreboard/ball-timeline";
 import { WicketFlow } from "@/components/scorer/wicket-flow";
 import { aggregateBatterScores, aggregateBowlerScores } from "@/lib/engine/statistics";
@@ -69,6 +70,9 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [bootstrappedMatch, setBootstrappedMatch] = useState<Match | null>(null);
   const [bootstrappedInnings, setBootstrappedInnings] = useState<Innings | null>(null);
   const [pendingDismissal, setPendingDismissal] = useState<DismissalType | null>(null);
+  const [pickRole, setPickRole] = useState<"striker" | "non_striker" | "bowler" | null>(null);
+  const [participantError, setParticipantError] = useState<string | null>(null);
+  const [participantsSynced, setParticipantsSynced] = useState(false);
 
   const fixture = live.fixture;
   const match = bootstrappedMatch ?? live.match;
@@ -76,11 +80,28 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const balls = live.balls;
 
   useEffect(() => {
-    if (live.currentInnings) {
+    setParticipantsSynced(false);
+    setPickRole(null);
+    setParticipantError(null);
+  }, [innings?.id]);
+
+  useEffect(() => {
+    const remote = live.currentInnings;
+    if (!remote) return;
+    const hasParticipants =
+      Boolean(remote.strikerId) &&
+      Boolean(remote.nonStrikerId) &&
+      Boolean(remote.bowlerId);
+    if (hasParticipants) {
       setBootstrappedInnings(null);
       setBootstrappedMatch(null);
     }
-  }, [live.currentInnings?.id]);
+  }, [
+    live.currentInnings?.id,
+    live.currentInnings?.strikerId,
+    live.currentInnings?.nonStrikerId,
+    live.currentInnings?.bowlerId,
+  ]);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
@@ -117,9 +138,51 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const batters = useMemo(() => aggregateBatterScores(balls), [balls]);
   const bowlers = useMemo(() => aggregateBowlerScores(balls), [balls]);
 
-  const striker = batters.find((b) => b.playerId === innings?.strikerId);
-  const nonStriker = batters.find((b) => b.playerId === innings?.nonStrikerId);
-  const bowler = bowlers.find((b) => b.playerId === innings?.bowlerId) ?? bowlers[0];
+  const buildBatterDisplay = useCallback(
+    (playerId: string | undefined): BatterScore | null => {
+      if (!playerId) return null;
+      const fromStats = batters.find((b) => b.playerId === playerId);
+      if (fromStats) return fromStats;
+      const player = battingXi.find((p) => p.id === playerId);
+      if (!player) return null;
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        runs: 0,
+        balls: 0,
+        fours: 0,
+        sixes: 0,
+        strikeRate: 0,
+        isOut: false,
+      };
+    },
+    [batters, battingXi]
+  );
+
+  const buildBowlerDisplay = useCallback(
+    (playerId: string | undefined): BowlerScore | null => {
+      if (!playerId) return null;
+      const fromStats = bowlers.find((b) => b.playerId === playerId);
+      if (fromStats) return fromStats;
+      const player = bowlingXi.find((p) => p.id === playerId);
+      if (!player) return null;
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        overs: 0,
+        balls: 0,
+        maidens: 0,
+        runs: 0,
+        wickets: 0,
+        economy: 0,
+      };
+    },
+    [bowlers, bowlingXi]
+  );
+
+  const striker = buildBatterDisplay(innings?.strikerId);
+  const nonStriker = buildBatterDisplay(innings?.nonStrikerId);
+  const bowler = buildBowlerDisplay(innings?.bowlerId);
 
   const ctx = useCallback((): ScoringContext | null => {
     if (!innings?.strikerId || !innings.nonStrikerId || !innings.bowlerId) return null;
@@ -137,6 +200,23 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     };
   }, [innings, battingXi, bowlingXi]);
 
+  const scoringBlockedReason = useMemo(() => {
+    if (!innings) return null;
+    if (!innings.strikerId || !innings.nonStrikerId || !innings.bowlerId) {
+      return "Set striker, non-striker, and bowler before scoring.";
+    }
+    if (!battingXi.find((p) => p.id === innings.strikerId)) {
+      return "Striker is not in the batting XI. Tap a batter below to set striker.";
+    }
+    if (!battingXi.find((p) => p.id === innings.nonStrikerId)) {
+      return "Non-striker is not in the batting XI. Tap a batter below to set non-striker.";
+    }
+    if (!bowlingXi.find((p) => p.id === innings.bowlerId)) {
+      return "Bowler is not in the bowling XI. Tap a bowler below to set bowler.";
+    }
+    return null;
+  }, [innings, battingXi, bowlingXi]);
+
   const scoringUser = useCallback(async () => {
     if (!user) return undefined;
     const idToken = await user.getIdToken();
@@ -149,6 +229,74 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   );
 
   const startGate = fixture ? canStartLiveScoring(fixture) : { ok: false as const, reason: "Match not found" };
+
+  useEffect(() => {
+    if (!innings || participantsSynced || busy) return;
+    if (!battingXi.length || !bowlingXi.length) return;
+    if (innings.strikerId && innings.nonStrikerId && innings.bowlerId) {
+      setParticipantsSynced(true);
+      return;
+    }
+
+    const updates = {
+      strikerId: innings.strikerId ?? battingXi[0]?.id,
+      nonStrikerId: innings.nonStrikerId ?? battingXi[1]?.id ?? battingXi[0]?.id,
+      bowlerId: innings.bowlerId ?? bowlingXi[0]?.id,
+    };
+
+    if (!updates.strikerId || !updates.nonStrikerId || !updates.bowlerId) return;
+
+    setBusy(true);
+    updateInningsParticipants(innings, updates)
+      .then((updated) => {
+        setBootstrappedInnings(updated);
+        setParticipantsSynced(true);
+        setParticipantError(null);
+      })
+      .catch((error) => {
+        setParticipantError(formatLiveStartError(error));
+      })
+      .finally(() => setBusy(false));
+  }, [innings, battingXi, bowlingXi, participantsSynced, busy]);
+
+  const handleSetParticipant = async (
+    role: "striker" | "non_striker" | "bowler",
+    player: RosterPlayer
+  ) => {
+    if (!innings || busy) return;
+    setBusy(true);
+    setParticipantError(null);
+    try {
+      const updates =
+        role === "striker"
+          ? { strikerId: player.id }
+          : role === "non_striker"
+            ? { nonStrikerId: player.id }
+            : { bowlerId: player.id };
+      const updated = await updateInningsParticipants(innings, updates);
+      setBootstrappedInnings(updated);
+      setPickRole(null);
+    } catch (error) {
+      setParticipantError(formatLiveStartError(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handlePlayerPick = (player: RosterPlayer, team: "batting" | "bowling") => {
+    if (team === "bowling") {
+      void handleSetParticipant("bowler", player);
+      return;
+    }
+    if (pickRole === "striker") {
+      void handleSetParticipant("striker", player);
+    } else if (pickRole === "non_striker") {
+      void handleSetParticipant("non_striker", player);
+    } else {
+      setPickRole("striker");
+      void handleSetParticipant("striker", player);
+    }
+  };
 
   const handleStart = async () => {
     if (!fixture) return;
@@ -175,9 +323,13 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const handleScore = async (action: ScoringAction) => {
     if (!match || !innings || busy) return;
     const context = ctx();
-    if (!context) return;
+    if (!context) {
+      setParticipantError(scoringBlockedReason ?? "Set striker, non-striker, and bowler before scoring.");
+      return;
+    }
 
     setBusy(true);
+    setParticipantError(null);
     try {
       if (offline) {
         await queueOfflineAction({
@@ -347,10 +499,45 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         </div>
       </div>
 
+      {(participantError || scoringBlockedReason) && (
+        <div className="glass-card p-3 border border-amber-500/40 bg-amber-500/10 text-amber-100 text-sm">
+          {participantError ?? scoringBlockedReason}
+        </div>
+      )}
+
       {/* Batters & bowler */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="glass-card p-4">
-          <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Batters</h4>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h4 className="text-xs uppercase tracking-wider text-slate-500">Batters</h4>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setPickRole(pickRole === "striker" ? null : "striker")}
+                className={cn(
+                  "text-xs px-2 py-1 rounded font-semibold",
+                  pickRole === "striker" ? "bg-emerald-500 text-white" : "bg-slate-800 text-white"
+                )}
+              >
+                Set Striker
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickRole(pickRole === "non_striker" ? null : "non_striker")}
+                className={cn(
+                  "text-xs px-2 py-1 rounded font-semibold",
+                  pickRole === "non_striker" ? "bg-emerald-500 text-white" : "bg-slate-800 text-white"
+                )}
+              >
+                Set Non-Striker
+              </button>
+            </div>
+          </div>
+          {pickRole && pickRole !== "bowler" && (
+            <p className="text-xs text-emerald-400 mb-2">
+              Tap a batter to set as {pickRole === "striker" ? "striker" : "non-striker"}.
+            </p>
+          )}
           <table className="w-full text-sm">
             <thead>
               <tr className="text-slate-500 text-left">
@@ -376,32 +563,83 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
                   <td>{strikeRate(b!.runs, b!.balls)}</td>
                 </tr>
               ))}
+              {!striker && !nonStriker && (
+                <tr>
+                  <td colSpan={6} className="py-3 text-slate-500 text-sm">
+                    No batters selected yet. Use the buttons above, then tap a name.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div className="mt-3 flex gap-2 flex-wrap">
-            {battingXi.slice(0, 6).map((p) => (
+            {battingXi.map((p) => (
               <button
                 key={p.id}
                 type="button"
-                className="text-xs px-2 py-1 rounded bg-slate-800 text-white"
-                onClick={() => {}}
+                disabled={busy}
+                className={cn(
+                  "text-xs px-2 py-1 rounded font-medium disabled:opacity-40",
+                  p.id === innings.strikerId
+                    ? "bg-emerald-600 text-white ring-2 ring-emerald-300"
+                    : p.id === innings.nonStrikerId
+                      ? "bg-blue-700 text-white ring-2 ring-blue-300"
+                      : "bg-slate-800 text-white"
+                )}
+                onClick={() => handlePlayerPick(p, "batting")}
               >
                 {p.name.split(" ")[0]}
+                {p.id === innings.strikerId ? "*" : p.id === innings.nonStrikerId ? "†" : ""}
               </button>
             ))}
           </div>
         </div>
 
         <div className="glass-card p-4">
-          <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-3">Bowler</h4>
-          {bowler && (
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h4 className="text-xs uppercase tracking-wider text-slate-500">Bowler</h4>
+            <button
+              type="button"
+              onClick={() => setPickRole(pickRole === "bowler" ? null : "bowler")}
+              className={cn(
+                "text-xs px-2 py-1 rounded font-semibold",
+                pickRole === "bowler" ? "bg-emerald-500 text-white" : "bg-slate-800 text-white"
+              )}
+            >
+              Set Bowler
+            </button>
+          </div>
+          {pickRole === "bowler" && (
+            <p className="text-xs text-emerald-400 mb-2">Tap a bowler below to assign.</p>
+          )}
+          {bowler ? (
             <p className="text-lg font-bold">
               {bowler.playerName}{" "}
               <span className="font-mono text-slate-500 text-base">
                 {Math.floor(bowler.balls / 6)}.{bowler.balls % 6}-{bowler.runs}-{bowler.wickets}
               </span>
             </p>
+          ) : (
+            <p className="text-sm text-slate-500 mb-2">No bowler selected yet.</p>
           )}
+          <div className="mt-3 flex gap-2 flex-wrap">
+            {bowlingXi.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                disabled={busy}
+                className={cn(
+                  "text-xs px-2 py-1 rounded font-medium disabled:opacity-40",
+                  p.id === innings.bowlerId
+                    ? "bg-purple-700 text-white ring-2 ring-purple-300"
+                    : "bg-slate-800 text-white"
+                )}
+                onClick={() => handlePlayerPick(p, "bowling")}
+              >
+                {p.name.split(" ")[0]}
+              </button>
+            ))}
+          </div>
           <BallTimelineStrip balls={balls} />
         </div>
       </div>

@@ -35,7 +35,10 @@ export function resolvePlayingXi(
 ): RosterPlayer[] {
   const roster = getTeamRoster(teamName);
   if (!storedIds?.length) return roster.slice(0, 11);
-  return storedIds
+  const resolved = storedIds
     .map((id) => roster.find((p) => p.id === id))
     .filter((p): p is RosterPlayer => Boolean(p));
+  // Fall back when Firestore has stale IDs that no longer match teams.json
+  if (resolved.length < 2) return roster.slice(0, 11);
+  return resolved;
 }
