@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useFixtures } from "@/hooks/use-tournament-data";
-import { Play, Smartphone, Tv, PenLine } from "lucide-react";
+import { MatchScoringActions } from "@/components/admin/match-scoring-actions";
 
 export default function AdminMatchesPage() {
   const { data: fixtures = [] } = useFixtures();
@@ -18,7 +17,7 @@ export default function AdminMatchesPage() {
         {fixtures.map((f) => (
           <div
             key={f.id}
-            className="glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="glass-card p-5 flex flex-col gap-4"
           >
             <div>
               <div className="flex items-center gap-2">
@@ -34,32 +33,7 @@ export default function AdminMatchesPage() {
                 {f.date} · {f.startTime} · {f.overs} overs · {f.status}
               </p>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <Link
-                href={`/admin/matches/${f.id}/score`}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium"
-              >
-                <PenLine className="w-4 h-4" /> Live Scorer
-              </Link>
-              <Link
-                href={`/match/${f.id}/score/mobile`}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium"
-              >
-                <Smartphone className="w-4 h-4" /> Mobile
-              </Link>
-              <Link
-                href={`/match/${f.id}/tv`}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm font-medium"
-              >
-                <Tv className="w-4 h-4" /> TV Mode
-              </Link>
-              <Link
-                href={`/live/${f.id}`}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium"
-              >
-                <Play className="w-4 h-4" /> Public Live
-              </Link>
-            </div>
+            <MatchScoringActions fixture={f} compact />
           </div>
         ))}
       </div>

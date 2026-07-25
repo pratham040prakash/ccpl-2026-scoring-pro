@@ -33,7 +33,7 @@ import {
   getInnings,
 } from "@/lib/firebase/firestore";
 import { doc } from "firebase/firestore";
-import { cacheBall, cacheInnings } from "@/lib/offline/store";
+import { cacheBall, cacheInnings, cacheMatch } from "@/lib/offline/store";
 import { aggregateBatterScores, aggregateBowlerScores } from "./statistics";
 import { detectLiveEvents } from "@/lib/live/live-events";
 import { finalizeMatchViaApi, syncLiveResultToLocalStorage } from "@/lib/live/finalize-match";
@@ -152,6 +152,7 @@ export async function initializeLiveMatch(
     await updateMatch(match.id, { status: "live" });
   }
 
+  await cacheMatch(match);
   await cacheInnings(innings);
   return { match, innings };
 }

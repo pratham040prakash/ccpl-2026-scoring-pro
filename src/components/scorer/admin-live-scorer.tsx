@@ -10,7 +10,7 @@ import {
   History,
   ChevronDown,
 } from "lucide-react";
-import type { DismissalType, ScoringAction } from "@/types";
+import type { DismissalType, Innings, Match, ScoringAction } from "@/types";
 import { cn, formatOvers, strikeRate } from "@/lib/utils";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
@@ -64,12 +64,22 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [restoreBall, setRestoreBall] = useState("0");
   const [offline, setOffline] = useState(false);
   const [started, setStarted] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [bootstrappedMatch, setBootstrappedMatch] = useState<Match | null>(null);
+  const [bootstrappedInnings, setBootstrappedInnings] = useState<Innings | null>(null);
   const [pendingDismissal, setPendingDismissal] = useState<DismissalType | null>(null);
 
   const fixture = live.fixture;
-  const match = live.match;
-  const innings = live.currentInnings;
+  const match = bootstrappedMatch ?? live.match;
+  const innings = bootstrappedInnings ?? live.currentInnings;
   const balls = live.balls;
+
+  useEffect(() => {
+    if (live.currentInnings) {
+      setBootstrappedInnings(null);
+      setBootstrappedMatch(null);
+    }
+  }, [live.currentInnings?.id]);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
@@ -140,10 +150,16 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const handleStart = async () => {
     if (!fixture) return;
     setBusy(true);
+    setStartError(null);
     try {
-      await initializeLiveMatch(fixture);
+      const result = await initializeLiveMatch(fixture);
+      setBootstrappedMatch(result.match);
+      setBootstrappedInnings(result.innings);
       setStarted(true);
       live.refresh();
+    } catch (error) {
+      setStarted(false);
+      setStartError(error instanceof Error ? error.message : String(error));
     } finally {
       setBusy(false);
     }
@@ -214,11 +230,22 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
 
   if (!innings && !started && live.innings.length === 0) {
     return (
-      <div className="glass-card p-10 text-center max-w-lg mx-auto">
+      <div className="glass-card p-10 text-center max-w-lg mx-auto space-y-4">
         <h2 className="text-xl font-black mb-2">Start Live Scoring</h2>
         <p className="text-slate-500 mb-6">
           {fixture.teamAName} vs {fixture.teamBName} · {fixture.overs} overs
         </p>
+        {profile?.role === "viewer" && (
+          <p className="text-amber-600 text-sm">
+            Your account has viewer access only. Ask an admin to grant scorer or administrator role.
+          </p>
+        )}
+        {startError && (
+          <p className="text-red-500 text-sm whitespace-pre-wrap">{startError}</p>
+        )}
+        {live.error && !startError && (
+          <p className="text-red-500 text-sm whitespace-pre-wrap">{live.error}</p>
+        )}
         <button
           onClick={handleStart}
           disabled={busy || profile?.role === "viewer"}
@@ -231,7 +258,27 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   }
 
   if (!innings) {
-    return <p className="text-slate-500 p-8">Loading live match…</p>;
+    return (
+      <div className="glass-card p-10 text-center max-w-lg mx-auto space-y-3">
+        <p className="text-slate-500">Loading live match…</p>
+        {(startError || live.error) && (
+          <p className="text-red-500 text-sm whitespace-pre-wrap">{startError || live.error}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setStarted(false);
+            setBootstrappedMatch(null);
+            setBootstrappedInnings(null);
+            setStartError(null);
+            live.refresh();
+          }}
+          className="text-sm text-primary underline"
+        >
+          Back to start
+        </button>
+      </div>
+    );
   }
 
   if (match.status === "completed" && match.result) {

@@ -9,6 +9,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { formatOvers } from "@/lib/utils";
 import {
   applyScoringAction,
+  initializeLiveMatch,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
 import { resolvePlayingXi } from "@/lib/live/player-roster";
@@ -24,11 +25,13 @@ export default function MobileScorerPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = use(params);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const live = useLiveMatch(matchId);
   const { fixture, match, currentInnings, balls } = live;
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [bootstrappedInnings, setBootstrappedInnings] = useState<typeof currentInnings>(null);
 
   useEffect(() => {
     const check = async () => setOffline(!(await isOnline()));
@@ -47,18 +50,35 @@ export default function MobileScorerPage({
     };
   }, [matchId, user]);
 
+  const activeInnings = bootstrappedInnings ?? currentInnings;
+
+  const handleStart = async () => {
+    if (!fixture) return;
+    setBusy(true);
+    setStartError(null);
+    try {
+      const result = await initializeLiveMatch(fixture);
+      setBootstrappedInnings(result.innings);
+      live.refresh();
+    } catch (error) {
+      setStartError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const getContext = useCallback((): ScoringContext | null => {
-    if (!currentInnings?.strikerId || !currentInnings.nonStrikerId || !currentInnings.bowlerId) {
+    if (!activeInnings?.strikerId || !activeInnings.nonStrikerId || !activeInnings.bowlerId) {
       return null;
     }
-    const battingXi = resolvePlayingXi(currentInnings.teamName, match?.playingXiA);
+    const battingXi = resolvePlayingXi(activeInnings.teamName, match?.playingXiA);
     const bowlingName =
-      currentInnings.teamId === fixture?.teamAId ? fixture?.teamBName : fixture?.teamAName;
+      activeInnings.teamId === fixture?.teamAId ? fixture?.teamBName : fixture?.teamAName;
     const bowlingXi = resolvePlayingXi(bowlingName ?? "", match?.playingXiB);
 
-    const s = battingXi.find((p) => p.id === currentInnings.strikerId);
-    const ns = battingXi.find((p) => p.id === currentInnings.nonStrikerId);
-    const bw = bowlingXi.find((p) => p.id === currentInnings.bowlerId);
+    const s = battingXi.find((p) => p.id === activeInnings.strikerId);
+    const ns = battingXi.find((p) => p.id === activeInnings.nonStrikerId);
+    const bw = bowlingXi.find((p) => p.id === activeInnings.bowlerId);
     if (!s || !ns || !bw) return null;
 
     return {
@@ -69,11 +89,11 @@ export default function MobileScorerPage({
       bowlerId: bw.id,
       bowlerName: bw.name,
     };
-  }, [currentInnings, match, fixture]);
+  }, [activeInnings, match, fixture]);
 
   const handleScore = useCallback(
     async (action: ScoringAction) => {
-      if (!match || !currentInnings || busy) return;
+      if (!match || !activeInnings || busy) return;
       const ctx = getContext();
       if (!ctx) return;
 
@@ -84,37 +104,37 @@ export default function MobileScorerPage({
           await queueOfflineAction({
             id: generateId("pending"),
             matchId: match.id,
-            inningsId: currentInnings.id,
+            inningsId: activeInnings.id,
             action,
             ...ctx,
-            sequence: currentInnings.nextSequence ?? balls.length,
+            sequence: activeInnings.nextSequence ?? balls.length,
             createdAt: new Date().toISOString(),
             synced: false,
           });
         } else {
-          await applyScoringAction(match, currentInnings, balls, action, ctx, userMeta);
+          await applyScoringAction(match, activeInnings, balls, action, ctx, userMeta);
         }
       } finally {
         setBusy(false);
       }
     },
-    [match, currentInnings, balls, busy, getContext, offline, user]
+    [match, activeInnings, balls, busy, getContext, offline, user]
   );
 
   const handleUndo = useCallback(async () => {
-    if (!match || !currentInnings || balls.length === 0 || busy) return;
+    if (!match || !activeInnings || balls.length === 0 || busy) return;
     setBusy(true);
     try {
       await undoLastBall(
         match,
-        currentInnings,
+        activeInnings,
         balls,
         user ? { uid: user.uid, email: user.email ?? undefined } : undefined
       );
     } finally {
       setBusy(false);
     }
-  }, [match, currentInnings, balls, busy, user]);
+  }, [match, activeInnings, balls, busy, user]);
 
   if (!fixture) {
     return (
@@ -124,13 +144,28 @@ export default function MobileScorerPage({
     );
   }
 
-  if (!currentInnings) {
+  if (!activeInnings) {
+    const canScore = profile?.role === "administrator" || profile?.role === "scorer";
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center">
-        <p className="text-xl font-bold mb-2">Match not started</p>
-        <p className="text-slate-400 mb-6">Start scoring from Admin → Match Control</p>
-        <Link href={`/admin/matches/${fixture.id}/score`} className="text-accent">
-          Open Admin Scorer
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center gap-4">
+        <p className="text-xl font-bold">Match not started</p>
+        <p className="text-slate-400">
+          {fixture.teamAName} vs {fixture.teamBName}
+        </p>
+        {startError && <p className="text-red-400 text-sm whitespace-pre-wrap">{startError}</p>}
+        {profile?.role === "viewer" && (
+          <p className="text-amber-400 text-sm">Viewer access — cannot start matches.</p>
+        )}
+        <button
+          type="button"
+          onClick={handleStart}
+          disabled={busy || !canScore}
+          className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
+        >
+          {busy ? "Starting…" : "Start Match"}
+        </button>
+        <Link href={`/admin/matches/${fixture.id}/score`} className="text-accent text-sm">
+          Or open Admin Live Scorer
         </Link>
       </div>
     );
@@ -146,9 +181,9 @@ export default function MobileScorerPage({
           <div className="text-center">
             <p className="text-xs text-slate-400">{fixture.matchId}</p>
             <p className="text-2xl font-black tabular-nums">
-              {currentInnings.runs}/{currentInnings.wickets}
+              {activeInnings.runs}/{activeInnings.wickets}
               <span className="text-sm font-normal text-slate-400 ml-2">
-                ({formatOvers(currentInnings.overs, currentInnings.balls)})
+                ({formatOvers(activeInnings.overs, activeInnings.balls)})
               </span>
             </p>
           </div>
@@ -166,7 +201,7 @@ export default function MobileScorerPage({
         onScore={handleScore}
         onUndo={handleUndo}
         disabled={busy || match.status === "paused"}
-        currentOver={formatOvers(currentInnings.overs, currentInnings.balls)}
+        currentOver={formatOvers(activeInnings.overs, activeInnings.balls)}
       />
     </div>
   );

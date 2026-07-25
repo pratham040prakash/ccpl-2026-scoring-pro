@@ -11,6 +11,7 @@ import {
   getBalls,
 } from "@/lib/firebase/firestore";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { getCachedInnings, getCachedMatch } from "@/lib/offline/store";
 import {
   aggregateBatterScores,
   aggregateBowlerScores,
@@ -72,8 +73,13 @@ export function useLiveMatch(matchId: string): UseLiveMatchResult {
     }
 
     if (!isFirebaseConfigured()) {
-      setMatch(fixtureToMatch(fixture));
-      setLoading(false);
+      void Promise.all([getCachedMatch(docId), getCachedInnings(docId)]).then(
+        ([cachedMatch, cachedInnings]) => {
+          setMatch(cachedMatch ?? fixtureToMatch(fixture));
+          if (cachedInnings.length) setInningsList(cachedInnings);
+          setLoading(false);
+        }
+      );
       return;
     }
 
@@ -90,10 +96,17 @@ export function useLiveMatch(matchId: string): UseLiveMatchResult {
     );
 
     unsubs.push(
-      subscribeToInnings(docId, (inn) => {
-        setInningsList(inn);
-        setLoading(false);
-      })
+      subscribeToInnings(
+        docId,
+        (inn) => {
+          setInningsList(inn);
+          setLoading(false);
+        },
+        (err) => {
+          setError(err.message || "Could not load innings");
+          setLoading(false);
+        }
+      )
     );
 
     unsubs.push(
