@@ -9,8 +9,9 @@ import {
 
 export function computeMatchResult(
   match: Match,
-  inningsList: Innings[]
-): { result: MatchResult; winnerId: string; loserId: string } {
+  inningsList: Innings[],
+  outcome: Match["outcome"] = "decided"
+): { result: MatchResult; winnerId: string | null; loserId: string | null } {
   const inn1 = inningsList.find((i) => i.inningsNumber === 1);
   const inn2 = inningsList.find((i) => i.inningsNumber === 2);
 
@@ -18,13 +19,30 @@ export function computeMatchResult(
     throw new Error("Both innings required to compute result");
   }
 
+  if (outcome === "no_result" || outcome === "abandoned") {
+    const label = outcome === "abandoned" ? "Match abandoned" : "No result";
+    return {
+      winnerId: null,
+      loserId: null,
+      result: {
+        winnerId: null,
+        winnerName: "—",
+        margin: label,
+        marginType: outcome === "abandoned" ? "abandoned" : "nr",
+        summary: `${match.teamAName} vs ${match.teamBName} — ${label}`,
+        outcome,
+        isNoResult: outcome === "no_result",
+      },
+    };
+  }
+
   const teamAInnings = inn1.teamId === match.teamAId ? inn1 : inn2;
   const target = match.target ?? teamAInnings.runs + 1;
 
-  let winnerId: string;
-  let loserId: string;
+  let winnerId: string | null;
+  let loserId: string | null;
   let margin: string;
-  let marginType: "runs" | "wickets";
+  let marginType: MatchResult["marginType"];
 
   const chaseInnings = inn2;
   const firstInnings = inn1;
@@ -46,10 +64,23 @@ export function computeMatchResult(
     margin = `${chaseInnings.runs - firstInnings.runs} runs`;
     marginType = "runs";
   } else {
-    winnerId = match.teamAId;
-    loserId = match.teamBId;
-    margin = "Tie";
-    marginType = "runs";
+    winnerId = null;
+    loserId = null;
+    margin = "Match tied";
+    marginType = "tie";
+    return {
+      winnerId,
+      loserId,
+      result: {
+        winnerId: null,
+        winnerName: "—",
+        margin,
+        marginType: "tie",
+        summary: `${match.teamAName} vs ${match.teamBName} tied`,
+        outcome: "tie",
+        isTie: true,
+      },
+    };
   }
 
   const winnerName =
@@ -64,6 +95,7 @@ export function computeMatchResult(
       margin,
       marginType,
       summary: `${winnerName} won by ${margin}`,
+      outcome: "decided",
     },
   };
 }
@@ -96,7 +128,7 @@ export function buildStoredScoreFromLive(
     teamBOvers: teamBInnings.overs,
     teamBBalls: teamBInnings.balls,
     winnerName: result.winnerName,
-    winnerId,
+    winnerId: winnerId ?? "",
     margin: result.margin,
     marginType: result.marginType,
     status: "published",

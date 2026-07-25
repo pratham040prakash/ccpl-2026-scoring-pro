@@ -96,7 +96,21 @@ export function calculatePointsTable(
       }
     }
 
-    if (match.result.winnerId === match.teamAId) {
+    if (match.result.outcome === "tie" || match.result.isTie || match.result.marginType === "tie") {
+      teamA.tied++;
+      teamB.tied++;
+      teamA.points += settings.pointsTie;
+      teamB.points += settings.pointsTie;
+    } else if (
+      match.result.outcome === "no_result" ||
+      match.result.outcome === "abandoned" ||
+      match.result.isNoResult
+    ) {
+      teamA.nr++;
+      teamB.nr++;
+      teamA.points += settings.pointsNr;
+      teamB.points += settings.pointsNr;
+    } else if (match.result.winnerId === match.teamAId) {
       teamA.won++;
       teamA.points += settings.pointsWin;
       teamB.lost++;

@@ -55,19 +55,32 @@ service cloud.firestore {
 
     match /matches/{docId} {
       allow read: if true;
-      allow create, update: if isScorer();
+      allow create: if isScorer();
+      allow update: if isScorer() && (!resource.data.locked || isAdmin());
       allow delete: if isAdmin();
     }
 
     match /innings/{docId} {
       allow read: if true;
-      allow write: if isScorer();
+      allow write: if isScorer() && (
+        !exists(/databases/$(database)/documents/matches/$(request.resource.data.matchId))
+        || !get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.locked
+        || isAdmin()
+      );
     }
 
     match /balls/{docId} {
       allow read: if true;
-      allow create: if isScorer();
-      allow update, delete: if isScorer();
+      allow create: if isScorer() && (
+        !exists(/databases/$(database)/documents/matches/$(request.resource.data.matchId))
+        || !get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.locked
+        || isAdmin()
+      );
+      allow update, delete: if isScorer() && (
+        !exists(/databases/$(database)/documents/matches/$(request.resource.data.matchId))
+        || !get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.locked
+        || isAdmin()
+      );
     }
 
     match /commentary/{docId} {

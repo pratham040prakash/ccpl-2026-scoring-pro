@@ -162,16 +162,32 @@ export interface Match {
   published: boolean;
   playerOfMatchId?: string;
   shareSlug: string;
+  scoringSession?: ScoringSession | null;
+  outcome?: MatchOutcome;
   createdAt: string;
   updatedAt: string;
 }
 
+export interface ScoringSession {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  acquiredAt: string;
+  heartbeatAt: string;
+  expiresAt: string;
+}
+
+export type MatchOutcome = "decided" | "tie" | "no_result" | "abandoned";
+
 export interface MatchResult {
-  winnerId: string;
+  winnerId: string | null;
   winnerName: string;
   margin: string;
-  marginType: "runs" | "wickets";
+  marginType: "runs" | "wickets" | "tie" | "nr" | "abandoned";
   summary: string;
+  outcome?: MatchOutcome;
+  isTie?: boolean;
+  isNoResult?: boolean;
 }
 
 export interface Innings {

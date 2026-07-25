@@ -16,7 +16,7 @@ export interface StoredMatchScore {
   winnerName: string;
   winnerId: string;
   margin: string;
-  marginType: "runs" | "wickets";
+  marginType: "runs" | "wickets" | "tie" | "nr" | "abandoned";
   status: "completed" | "published";
   source: "csv" | "image" | "manual" | "scorer" | "live";
   updatedAt: string;

@@ -41,6 +41,14 @@ import { aggregateBatterScores, aggregateBowlerScores } from "./statistics";
 import { detectLiveEvents } from "@/lib/live/live-events";
 import { finalizeMatchViaApi, syncLiveResultToLocalStorage } from "@/lib/live/finalize-match";
 import { logScoring } from "@/lib/live/scoring-logger";
+import { assertMatchWritable } from "@/lib/live/match-writable";
+
+export interface ScoringActionResult {
+  ball: Ball;
+  innings: Innings;
+  firstInningsComplete?: boolean;
+  readyToFinalize?: boolean;
+}
 
 export interface ScoringContext {
   strikerId: string;
@@ -205,7 +213,8 @@ export async function applyScoringAction(
   action: ScoringAction,
   ctx: ScoringContext,
   user?: ScoringUser
-): Promise<{ ball: Ball; innings: Innings }> {
+): Promise<ScoringActionResult> {
+  assertMatchWritable(match, "score");
   const sequence = innings.nextSequence ?? existingBalls.length;
 
   const result = scoreBall({
@@ -350,11 +359,11 @@ export async function applyScoringAction(
     await postBallCommit();
 
     if (result.completeInnings && innings.inningsNumber === 1) {
-      await startSecondInnings(
-        { ...match, target: updatedInnings.runs + 1 },
-        updatedInnings
-      );
-      return { ball, innings: updatedInnings };
+      return {
+        ball,
+        innings: updatedInnings,
+        firstInningsComplete: true,
+      };
     }
   } else {
     await saveBall(ball);
@@ -362,24 +371,13 @@ export async function applyScoringAction(
     await saveCommentary(commentaryEntry);
     await saveAuditEntry(auditEntry);
     await postBallCommit();
+    if (result.completeInnings && innings.inningsNumber === 1) {
+      return { ball, innings: updatedInnings, firstInningsComplete: true };
+    }
   }
 
   if (matchComplete) {
-    if (!user?.idToken) {
-      throw new Error(
-        "Sign in again to finalize the match and update standings."
-      );
-    }
-    const fin = await finalizeMatchViaApi(match.id, user.idToken);
-    logScoring("finalize", fin.success ? "Match finalized" : "Finalize failed", {
-      matchId: match.id,
-      message: fin.message,
-    });
-    if (!fin.success) {
-      throw new Error(fin.message ?? "Failed to finalize match and update standings.");
-    }
-    const allInnings = await getInnings(match.id);
-    syncLiveResultToLocalStorage(match, allInnings);
+    return { ball, innings: updatedInnings, readyToFinalize: true };
   }
 
   return { ball, innings: updatedInnings };
@@ -391,6 +389,7 @@ export async function undoLastBall(
   balls: Ball[],
   user?: ScoringUser
 ): Promise<Innings | null> {
+  assertMatchWritable(match, "undo");
   if (balls.length === 0) return null;
   const lastBall = balls[balls.length - 1];
   const remaining = balls.slice(0, -1);
@@ -509,6 +508,7 @@ export async function editBallDelivery(
   reason: string,
   user?: ScoringUser
 ): Promise<{ ball: Ball; innings: Innings; balls: Ball[] }> {
+  assertMatchWritable(match, "edit a delivery");
   const trimmedReason = reason.trim();
   if (trimmedReason.length < 3) {
     throw new Error("Enter a correction reason (at least 3 characters).");
@@ -694,8 +694,10 @@ export async function restoreToOver(
   balls: Ball[],
   targetOver: number,
   targetBall: number,
-  user?: ScoringUser
+  user?: ScoringUser,
+  reason?: string
 ): Promise<Innings> {
+  assertMatchWritable(match, "restore score");
   const keep = balls.filter((b) => {
     if (b.overNumber < targetOver) return true;
     if (b.overNumber > targetOver) return false;
@@ -719,6 +721,7 @@ export async function restoreToOver(
       sequence: keep.length,
       overLabel: formatOverLabel(targetOver, targetBall),
       snapshot: { innings: updatedInnings, ballCount: keep.length },
+      reason: reason?.trim() || undefined,
       createdBy: user?.uid ?? "system",
       createdByEmail: user?.email,
       timestamp: new Date().toISOString(),

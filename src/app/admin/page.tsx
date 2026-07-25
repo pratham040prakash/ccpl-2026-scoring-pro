@@ -17,6 +17,8 @@ import { useAuth } from "@/providers/auth-provider";
 import { useFixtures, useTeams } from "@/hooks/use-tournament-data";
 import { useMatchResults } from "@/providers/match-results-provider";
 import { ScoreUpdatePanel } from "@/components/admin/score-update-panel";
+import { TournamentOpsPanel } from "@/components/admin/tournament-ops-panel";
+import { CONFIRM } from "@/lib/live/operator-confirm";
 import { SignInPanel } from "@/components/auth/sign-in-panel";
 
 export default function AdminPage() {
@@ -103,6 +105,7 @@ export default function AdminPage() {
   }
 
   const handleSeed = async () => {
+    if (!(await CONFIRM.tournamentReset())) return;
     setSeeding(true);
     setSeedResult("");
     try {
@@ -182,6 +185,10 @@ export default function AdminPage() {
           {seedResult}
         </div>
       )}
+
+      <div className="mb-8">
+        <TournamentOpsPanel />
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {adminSections.map(({ title, icon: Icon, items }) => (
