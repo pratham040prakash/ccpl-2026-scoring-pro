@@ -139,3 +139,21 @@ body {
     gap: 0.5rem;
   }
 }
+
+.participant-card {
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
+}
+
+.crease-slot {
+  backdrop-filter: blur(10px);
+}
+
+.quick-action-btn {
+  touch-action: manipulation;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.quick-action-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}

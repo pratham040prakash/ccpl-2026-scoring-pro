@@ -1,13 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "fixtures",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "order", "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "balls",
       "queryScope": "COLLECTION",
       "fields": [

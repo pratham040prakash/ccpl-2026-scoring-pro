@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "firebase:deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
+    "firebase:deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes",
     "firebase:setup-check": "node scripts/firebase-setup-check.mjs",
     "firebase:deploy": "npm run build && firebase deploy",
     "seed": "curl -X POST http://localhost:3000/api/seed",
