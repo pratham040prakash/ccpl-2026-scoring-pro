@@ -1,15 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import {
   Pause,
   Play,
-  RotateCcw,
   Undo2,
 } from "lucide-react";
 import type { DismissalType, Innings, Match, ScoringAction, Ball } from "@/types";
-import { cn, formatOvers } from "@/lib/utils";
+import { formatOvers } from "@/lib/utils";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -54,6 +52,7 @@ import {
 } from "@/lib/offline/recovery";
 import { WicketFlow } from "@/components/scorer/wicket-flow";
 import { ParticipantWorkspace } from "@/components/scorer/participant-workspace";
+import { ScoringPad } from "@/components/scorer/scoring-pad";
 import {
   ParticipantPickerSheet,
   tryAutoSelectSingleBowler,
@@ -74,7 +73,6 @@ import { syncPendingActions } from "@/lib/offline/sync";
 import { generateId } from "@/lib/utils";
 import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
 
-const RUN_BUTTONS = [0, 1, 2, 3, 4, 5, 6];
 const DISMISSALS: DismissalType[] = [
   "bowled",
   "caught",
@@ -134,7 +132,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [pendingDismissal, setPendingDismissal] = useState<DismissalType | null>(null);
   const [pickMode, setPickMode] = useState<ParticipantPickMode | null>(null);
   const [battingOrder, setBattingOrder] = useState<string[]>([]);
-  const [lineupCollapsed, setLineupCollapsed] = useState(false);
+  const [lineupCollapsed, setLineupCollapsed] = useState(true);
   const [pickerMessage, setPickerMessage] = useState<string | null>(null);
   const [participantError, setParticipantError] = useState<string | null>(null);
   const [participantsSynced, setParticipantsSynced] = useState(false);
@@ -770,6 +768,23 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         </div>
       )}
 
+      <ScoringPad
+        disabled={scoringDisabled}
+        paused={match.status === "paused"}
+        extrasMode={extrasMode}
+        wicketMode={wicketMode}
+        dismissals={DISMISSALS}
+        onScore={handleScore}
+        onExtrasMode={setExtrasMode}
+        onWicketMode={setWicketMode}
+        onPendingDismissal={setPendingDismissal}
+        lastBallLabel={
+          balls.length > 0
+            ? `${balls[balls.length - 1].overNumber}.${balls[balls.length - 1].ballNumber} (${balls[balls.length - 1].runs})`
+            : undefined
+        }
+      />
+
       <ParticipantWorkspace
         innings={innings}
         matchOvers={match.overs}
@@ -816,107 +831,6 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         onPickBowler={(player) => void handleSetParticipant("bowler", player)}
         onValidationError={setPickerMessage}
       />
-
-      {/* Scoring buttons */}
-      {!wicketMode && !extrasMode && (
-        <>
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-            {RUN_BUTTONS.map((runs) => (
-              <motion.button
-                key={runs}
-                whileTap={{ scale: 0.92 }}
-                disabled={busy || match.status === "paused"}
-                onClick={() =>
-                  handleScore(runs === 0 ? { type: "dot" } : { type: "runs", runs })
-                }
-                className={cn(
-                  "h-16 sm:h-20 rounded-2xl text-2xl font-black disabled:opacity-40",
-                  runs === 0 ? "bg-slate-700 text-white" :
-                  runs === 4 ? "bg-blue-600 text-white" :
-                  runs === 6 ? "bg-purple-600 text-white" :
-                  "bg-emerald-600 text-white"
-                )}
-              >
-                {runs === 0 ? "·" : runs}
-              </motion.button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(["wide", "no_ball", "bye", "leg_bye"] as const).map((ex) => (
-              <button
-                key={ex}
-                type="button"
-                disabled={busy}
-                onClick={() => setExtrasMode(ex)}
-                className="h-14 rounded-xl bg-amber-600/90 text-white font-bold capitalize"
-              >
-                {ex.replace("_", " ")}
-              </button>
-            ))}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => handleScore({ type: "penalty", runs: 5 })}
-              className="h-14 rounded-xl bg-orange-700 text-white font-bold"
-            >
-              Penalty
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setWicketMode(true)}
-              className="h-14 rounded-xl bg-red-600 text-white font-black"
-            >
-              Wicket
-            </button>
-          </div>
-        </>
-      )}
-
-      {extrasMode && (
-        <div className="glass-card p-4 space-y-2">
-          <button type="button" onClick={() => setExtrasMode(null)} className="text-sm text-slate-500 flex items-center gap-1">
-            <RotateCcw className="w-4 h-4" /> Back
-          </button>
-          <p className="font-bold capitalize">{extrasMode.replace("_", " ")} — select runs</p>
-          <div className="grid grid-cols-4 gap-2">
-            {[0, 1, 2, 3, 4, 5, 6].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  if (extrasMode === "wide") handleScore({ type: "wide", runs: r });
-                  else if (extrasMode === "no_ball") handleScore({ type: "no_ball", runs: r });
-                  else if (extrasMode === "bye") handleScore({ type: "bye", runs: r || 1 });
-                  else handleScore({ type: "leg_bye", runs: r || 1 });
-                }}
-                className="h-14 rounded-xl bg-amber-600 text-white font-bold"
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {wicketMode && (
-        <div className="glass-card p-4 space-y-2">
-          <button type="button" onClick={() => setWicketMode(false)} className="text-sm text-slate-500 flex items-center gap-1">
-            <RotateCcw className="w-4 h-4" /> Back
-          </button>
-          {DISMISSALS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setPendingDismissal(d)}
-              className="w-full h-14 rounded-xl bg-red-700 text-white font-bold capitalize"
-            >
-              {d.replace(/_/g, " ")}
-            </button>
-          ))}
-        </div>
-      )}
 
       <WicketFlow
         open={Boolean(pendingDismissal)}

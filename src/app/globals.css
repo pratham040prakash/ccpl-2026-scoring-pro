@@ -157,3 +157,18 @@ body {
 .quick-action-btn:active:not(:disabled) {
   transform: scale(0.97);
 }
+
+.scoring-pad {
+  border: 1px solid rgb(16 185 129 / 0.25);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 0.2);
+}
+
+.score-pad-btn {
+  touch-action: manipulation;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.score-pad-btn:active:not(:disabled) {
+  transform: scale(0.96);
+  filter: brightness(1.08);
+}

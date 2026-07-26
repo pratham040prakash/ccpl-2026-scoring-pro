@@ -98,16 +98,6 @@ export function ParticipantWorkspace({
 
   return (
     <div className="space-y-4">
-      <QuickActionsBar
-        disabled={busy}
-        onUndo={onUndo}
-        onSwapStrike={onSwapStrike}
-        onNextBatter={onNextBatter}
-        onRecentBowler={onRecentBowler}
-        nextBatterName={nextBatter?.name}
-        recentBowlerName={recentBowlerName}
-      />
-
       <div className="grid md:grid-cols-3 gap-3">
         <CreaseSlot
           label="Striker *"
@@ -134,6 +124,16 @@ export function ParticipantWorkspace({
           onTap={() => onOpenPick("bowler")}
         />
       </div>
+
+      <QuickActionsBar
+        disabled={busy}
+        onUndo={onUndo}
+        onSwapStrike={onSwapStrike}
+        onNextBatter={onNextBatter}
+        onRecentBowler={onRecentBowler}
+        nextBatterName={nextBatter?.name}
+        recentBowlerName={recentBowlerName}
+      />
 
       <div className="grid lg:grid-cols-2 gap-4">
         <BattingLineupPanel
