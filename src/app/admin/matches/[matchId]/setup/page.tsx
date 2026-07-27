@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -27,6 +27,39 @@ export default function MatchSetupPage({
   const canScore =
     profile?.role === "administrator" || profile?.role === "scorer";
 
+  const shouldRedirect = useMemo(
+    () =>
+      hasLiveScoringStarted(live.innings) ||
+      live.match?.status === "completed" ||
+      live.match?.locked === true,
+    [live.innings, live.match?.status, live.match?.locked]
+  );
+
+  useEffect(() => {
+    if (authLoading || live.loading || !shouldRedirect) return;
+    router.replace(`/admin/matches/${matchId}/score`);
+  }, [authLoading, live.loading, shouldRedirect, matchId, router]);
+
+  const fixture = live.fixture;
+  const startGate = fixture ? canStartLiveScoring(fixture) : { ok: false as const, reason: "Match not found" };
+
+  const handleComplete = async (input: MatchSetupInput) => {
+    if (!fixture || !startGate.ok) {
+      setError(startGate.ok ? "Match not found" : startGate.reason);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await initializeLiveMatch(fixture, input);
+      router.push(`/admin/matches/${matchId}/score`);
+    } catch (err) {
+      setError(formatLiveStartError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (authLoading || live.loading) {
     return <div className="p-10 text-center text-slate-500">Loading…</div>;
   }
@@ -42,7 +75,6 @@ export default function MatchSetupPage({
     );
   }
 
-  const fixture = live.fixture;
   if (!fixture) {
     return (
       <div className="max-w-lg mx-auto p-10 text-center">
@@ -54,39 +86,9 @@ export default function MatchSetupPage({
     );
   }
 
-  const shouldRedirect =
-    hasLiveScoringStarted(live.innings) ||
-    live.match?.status === "completed" ||
-    live.match?.locked === true;
-
-  useEffect(() => {
-    if (!authLoading && !live.loading && shouldRedirect) {
-      router.replace(`/admin/matches/${matchId}/score`);
-    }
-  }, [authLoading, live.loading, shouldRedirect, matchId, router]);
-
   if (shouldRedirect) {
     return <div className="p-10 text-center text-slate-500">Redirecting to scorer…</div>;
   }
-
-  const startGate = canStartLiveScoring(fixture);
-
-  const handleComplete = async (input: MatchSetupInput) => {
-    if (!startGate.ok) {
-      setError(startGate.reason);
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await initializeLiveMatch(fixture, input);
-      router.push(`/admin/matches/${matchId}/score`);
-    } catch (err) {
-      setError(formatLiveStartError(err));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -116,12 +118,6 @@ export default function MatchSetupPage({
       {error && (
         <div className="glass-card p-4 mb-6 border border-red-500/30 text-red-600 text-sm whitespace-pre-wrap">
           {error}
-        </div>
-      )}
-
-      {hasLiveScoringStarted(live.innings) && (
-        <div className="glass-card p-4 mb-6 border border-amber-500/30 text-amber-700 text-sm">
-          Scoring has started — toss and batting/bowling teams are locked for this match.
         </div>
       )}
 
