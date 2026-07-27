@@ -143,7 +143,7 @@ export default function AdminPage() {
       icon: Calendar,
       items: [
         { label: "View Fixtures", href: "/fixtures", count: fixtures.length },
-        { label: "Start Match", href: "/admin/matches" },
+        { label: "Match Setup", href: "/admin/matches" },
       ],
     },
     {
@@ -176,7 +176,7 @@ export default function AdminPage() {
           href="/admin/matches"
           className="flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-semibold hover:brightness-110"
         >
-          <Play className="w-5 h-5" /> Start Match
+          <Play className="w-5 h-5" /> Match Setup
         </Link>
       </div>
 

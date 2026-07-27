@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ClipboardList, PenLine, Radio, Smartphone, Tv } from "lucide-react";
 import type { Fixture } from "@/types";
 import { useLiveMatch } from "@/hooks/use-live-match";
@@ -20,7 +19,6 @@ export function MatchScoringActions({
   fixture,
   compact = false,
 }: Props) {
-  const router = useRouter();
   const { user, profile, retryAdminBootstrap } = useAuth();
   const live = useLiveMatch(fixture.id);
   const [startError, setStartError] = useState<string | null>(null);
@@ -44,16 +42,8 @@ export function MatchScoringActions({
     setRetryingRole(true);
     setRoleFixMessage(null);
     const err = await retryAdminBootstrap();
-    setRoleFixMessage(err ?? "Administrator access refreshed. Try Start Match again.");
+    setRoleFixMessage(err ?? "Administrator access refreshed. Try Match Setup again.");
     setRetryingRole(false);
-  };
-
-  const handleStart = () => {
-    if (!startGate.ok) {
-      setStartError(startGate.reason);
-      return;
-    }
-    router.push(`/admin/matches/${fixture.id}/setup`);
   };
 
   const actionClass = compact
@@ -140,21 +130,23 @@ export function MatchScoringActions({
           {!canScore && !isViewer && (
             <p className="text-amber-600 text-sm">Sign in with a scorer or administrator account.</p>
           )}
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={!canScore || !startGate.ok}
+          <Link
+            href={`/admin/matches/${fixture.id}/setup`}
+            onClick={(e) => {
+              if (!startGate.ok || !canScore) e.preventDefault();
+            }}
+            aria-disabled={!canScore || !startGate.ok}
             className={cn(
               actionClass,
-              "bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50 w-full sm:w-auto"
+              "bg-emerald-600 text-white hover:brightness-110 w-full sm:w-auto",
+              (!canScore || !startGate.ok) && "pointer-events-none opacity-50"
             )}
           >
             <ClipboardList className="w-4 h-4" />
             Match Setup Wizard
-          </button>
+          </Link>
           <p className="text-xs text-slate-500">
-            Toss, playing XI, and openers — batting/bowling teams are set automatically from the
-            toss.
+            Step 2: pick toss winner and batting first — bowling team is automatic.
           </p>
         </div>
       )}

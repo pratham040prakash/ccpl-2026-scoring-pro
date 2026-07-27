@@ -483,46 +483,50 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
           {step === "toss" && (
             <>
               <h2 className="text-2xl font-black">Toss</h2>
+              <p className="text-sm text-slate-500">
+                Pick the toss winner and who bats first. Bowling team is set automatically.
+              </p>
+
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-slate-500">Toss winner</p>
+                <p className="text-sm font-semibold text-slate-500">1. Toss winner</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <TeamCard
                     name={fixture.teamAName}
-                    subtitle="Team A"
+                    subtitle="Team A · won the toss"
                     selected={tossWinnerId === fixture.teamAId}
                     onSelect={() => setTossWinnerId(fixture.teamAId)}
                   />
                   <TeamCard
                     name={fixture.teamBName}
-                    subtitle="Team B"
+                    subtitle="Team B · won the toss"
                     selected={tossWinnerId === fixture.teamBId}
                     onSelect={() => setTossWinnerId(fixture.teamBId)}
                   />
                 </div>
               </div>
-              {tossWinnerId && (
-                <div className="space-y-3 pt-2">
-                  <p className="text-sm font-semibold text-slate-500">Batting first</p>
-                  <p className="text-xs text-slate-500">
-                    Choose who opens the innings — toss decision updates automatically.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <TeamCard
-                      name={fixture.teamAName}
-                      subtitle="Will bat first"
-                      selected={battingFirstTeamId === fixture.teamAId}
-                      onSelect={() => setBattingFirstTeamId(fixture.teamAId)}
-                    />
-                    <TeamCard
-                      name={fixture.teamBName}
-                      subtitle="Will bat first"
-                      selected={battingFirstTeamId === fixture.teamBId}
-                      onSelect={() => setBattingFirstTeamId(fixture.teamBId)}
-                    />
-                  </div>
+
+              <div className="space-y-3 pt-2 border-t border-slate-200/20">
+                <p className="text-sm font-semibold text-slate-500">2. Batting first</p>
+                <p className="text-xs text-slate-500">
+                  Tap the team that will open the innings — toss elected bat/bowl updates below.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <TeamCard
+                    name={fixture.teamAName}
+                    subtitle="Will bat first"
+                    selected={battingFirstTeamId === fixture.teamAId}
+                    onSelect={() => setBattingFirstTeamId(fixture.teamAId)}
+                  />
+                  <TeamCard
+                    name={fixture.teamBName}
+                    subtitle="Will bat first"
+                    selected={battingFirstTeamId === fixture.teamBId}
+                    onSelect={() => setBattingFirstTeamId(fixture.teamBId)}
+                  />
                 </div>
-              )}
-              {tossTeams && tossDecision && (
+              </div>
+
+              {tossTeams && tossDecision && tossWinnerId && (
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 space-y-2">
                   <p className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
                     <Sparkles className="w-4 h-4" /> Toss updated
@@ -534,6 +538,12 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
                     </p>
                   ))}
                 </div>
+              )}
+
+              {(!tossWinnerId || !battingFirstTeamId) && (
+                <p className="text-xs text-amber-600 font-medium">
+                  Select both toss winner and batting-first team to continue.
+                </p>
               )}
             </>
           )}

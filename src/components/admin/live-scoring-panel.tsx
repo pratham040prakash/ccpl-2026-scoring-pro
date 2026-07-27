@@ -34,7 +34,7 @@ export function LiveScoringPanel({ fixtures = [], compact = false }: Props) {
             <Radio className="w-5 h-5 text-accent" /> Live Scoring
           </h2>
           <p className="text-sm text-slate-500">
-            Start the match here, then score ball-by-ball — updates sync instantly to public live, TV, and mobile.
+            Open Match Setup Wizard — toss, batting first, playing XI, then live scoring.
           </p>
         </div>
       )}
@@ -67,7 +67,8 @@ export function LiveScoringPanel({ fixtures = [], compact = false }: Props) {
         </p>
         <ol className="text-sm text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside">
           <li>
-            Tap <strong>Start Match &amp; Open Scorer</strong> (required before mobile scoring).
+            Tap <strong>Match Setup Wizard</strong>, complete toss (winner + batting first), playing XI,
+            and openers.
           </li>
           <li>Score each ball in Live Scorer or Mobile — all viewers update in realtime.</li>
           <li>Use Undo or Restore to Over X.Y if a mistake is made (full audit trail).</li>
