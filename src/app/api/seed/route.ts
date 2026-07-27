@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import { buildSeedData } from "@/lib/seed";
+import { publishOfficialStandingsToFirestore } from "@/lib/server/standings-publish";
 import { AdminAuthError, verifyAdminRequest } from "@/lib/server/verify-admin";
 
 export const runtime = "nodejs";
@@ -94,9 +95,15 @@ export async function POST(request: Request) {
 
     await batch.commit();
 
+    try {
+      await publishOfficialStandingsToFirestore(db);
+    } catch (standingsError) {
+      console.error("Seed succeeded but standings publish failed:", standingsError);
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Seeded ${data.teams.length} teams, ${data.players.length} players, ${data.fixtures.length} fixtures to Firestore.`,
+      message: `Seeded ${data.teams.length} teams, ${data.players.length} players, ${data.fixtures.length} fixtures to Firestore. Day 1 standings published.`,
       counts: {
         teams: data.teams.length,
         players: data.players.length,

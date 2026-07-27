@@ -15,23 +15,6 @@ import {
 import { DEMO_DATA } from "@/lib/seed";
 import { useMatchResults } from "@/providers/match-results-provider";
 
-function emptyPointsTable() {
-  return DEMO_DATA.teams.map((t, i) => ({
-    teamId: t.id,
-    teamName: t.name,
-    played: 0,
-    won: 0,
-    lost: 0,
-    tied: 0,
-    nr: 0,
-    points: 0,
-    runsFor: 0,
-    runsAgainst: 0,
-    nrr: 0,
-    rank: i + 1,
-  }));
-}
-
 import type { Player } from "@/types";
 
 function orderPlayers(players: Player[], playerIds?: string[]): Player[] {
@@ -168,20 +151,33 @@ export function usePointsTable() {
       const localTable = getPointsTable();
       const localPlayed = localTable.reduce((sum, entry) => sum + entry.played, 0);
 
+      try {
+        const res = await fetch("/api/standings", { cache: "no-store" });
+        if (res.ok) {
+          const payload = (await res.json()) as { table?: typeof localTable };
+          const serverTable = payload.table ?? [];
+          const serverPlayed = serverTable.reduce((sum, entry) => sum + entry.played, 0);
+          if (serverPlayed >= localPlayed && serverPlayed > 0) {
+            return serverTable;
+          }
+        }
+      } catch {
+        /* fall through to client/firestore sources */
+      }
+
       if (isFirebaseConfigured()) {
         try {
           const table = await fetchPointsTableFromFirestore();
           const remotePlayed = table.reduce((sum, entry) => sum + entry.played, 0);
-          if (table.length && remotePlayed > localPlayed) return table;
+          if (remotePlayed > localPlayed) return table;
         } catch {
           /* fall through */
         }
       }
 
-      if (localPlayed > 0) return localTable;
-      return emptyPointsTable();
+      return localTable;
     },
-    refetchInterval: isFirebaseConfigured() ? 8000 : false,
+    refetchInterval: 15000,
   });
 
   return query;

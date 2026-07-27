@@ -38,7 +38,7 @@ const MatchResultsContext = createContext<MatchResultsContextValue | null>(null)
 
 export function MatchResultsProvider({ children }: { children: ReactNode }) {
   const [scores, setScores] = useState<Record<string, StoredMatchScore>>(() =>
-    mergeWithOfficialScores(typeof window !== "undefined" ? loadStoredScores() : {})
+    mergeWithOfficialScores(loadStoredScores())
   );
   const queryClient = useQueryClient();
 
