@@ -7,6 +7,7 @@ import { useLeaderboards } from "@/hooks/use-leaderboards";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { CONFIRM } from "@/lib/live/operator-confirm";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { PublishStandingsButton } from "@/components/admin/publish-standings-button";
 
 interface ValidationCheck {
   name: string;
@@ -85,6 +86,8 @@ export function TournamentOpsPanel() {
 
   return (
     <div className="space-y-6">
+      <PublishStandingsButton />
+
       <div className="glass-card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-xl font-black">Tournament operations</h2>

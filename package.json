@@ -7,6 +7,7 @@
     "dev:3001": "next dev -H 127.0.0.1 -p 3001",
     "build": "npm run generate:standings && next build",
     "generate:standings": "npx tsx scripts/generate-standings-json.ts",
+    "publish:standings": "npx tsx scripts/publish-day1-standings.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
