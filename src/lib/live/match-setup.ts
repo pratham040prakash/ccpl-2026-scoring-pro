@@ -21,7 +21,7 @@ export function opponentTeamId(fixture: Fixture, teamId: string): string {
   return teamId === fixture.teamAId ? fixture.teamBId : fixture.teamAId;
 }
 
-/** Derive batting/bowling from toss — never allow manual team pick. */
+/** Derive batting/bowling from toss — never allow manual bowling team pick. */
 export function deriveTeamsFromToss(
   fixture: Fixture,
   tossWinnerId: string,
@@ -30,11 +30,40 @@ export function deriveTeamsFromToss(
   const opponentId = opponentTeamId(fixture, tossWinnerId);
   const battingTeamId = tossDecision === "bat" ? tossWinnerId : opponentId;
   const bowlingTeamId = tossDecision === "bat" ? opponentId : tossWinnerId;
+  return deriveTeamsFromBattingFirst(fixture, battingTeamId);
+}
+
+/** Primary input: which team bats first → bowling team is the opponent. */
+export function deriveTeamsFromBattingFirst(
+  fixture: Fixture,
+  battingFirstTeamId: string
+): TossTeamsResult {
+  const bowlingTeamId = opponentTeamId(fixture, battingFirstTeamId);
   return {
-    battingTeamId,
+    battingTeamId: battingFirstTeamId,
     bowlingTeamId,
-    battingTeamName: teamName(fixture, battingTeamId),
+    battingTeamName: teamName(fixture, battingFirstTeamId),
     bowlingTeamName: teamName(fixture, bowlingTeamId),
+  };
+}
+
+/** Map toss winner + batting-first choice to elected bat/bowl. */
+export function deriveTossDecisionFromBattingFirst(
+  tossWinnerId: string,
+  battingFirstTeamId: string
+): TossDecision {
+  return battingFirstTeamId === tossWinnerId ? "bat" : "bowl";
+}
+
+export function resolveTossFromBattingFirst(
+  fixture: Fixture,
+  tossWinnerId: string,
+  battingFirstTeamId: string
+): { tossDecision: TossDecision } & TossTeamsResult {
+  const tossDecision = deriveTossDecisionFromBattingFirst(tossWinnerId, battingFirstTeamId);
+  return {
+    tossDecision,
+    ...deriveTeamsFromBattingFirst(fixture, battingFirstTeamId),
   };
 }
 
@@ -71,7 +100,7 @@ export function validateMatchSetup(
   if (input.tossWinnerId !== fixture.teamAId && input.tossWinnerId !== fixture.teamBId) {
     return "Invalid toss winner.";
   }
-  if (!input.tossDecision) return "Select bat first or bowl first.";
+  if (!input.tossDecision) return "Select which team bats first.";
 
   const rosterA = getTeamRoster(fixture.teamAName);
   const rosterB = getTeamRoster(fixture.teamBName);

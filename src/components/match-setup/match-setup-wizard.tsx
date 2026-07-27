@@ -19,7 +19,8 @@ import {
   type TeamPlayingMeta,
 } from "@/types/match-setup";
 import {
-  deriveTeamsFromToss,
+  deriveTossDecisionFromBattingFirst,
+  deriveTeamsFromBattingFirst,
   defaultSetupDraft,
   formatStage,
   MAX_PLAYING_XI,
@@ -72,39 +73,6 @@ function TeamCard({
           <Check className="w-3.5 h-3.5" /> Selected
         </span>
       )}
-    </button>
-  );
-}
-
-function RadioChoice({
-  label,
-  selected,
-  onSelect,
-}: {
-  label: string;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "flex items-center gap-3 w-full p-4 rounded-xl border-2 text-left font-semibold transition-all min-h-[56px]",
-        selected
-          ? "border-primary bg-primary/10 text-primary"
-          : "border-slate-200/30 hover:border-primary/40"
-      )}
-    >
-      <span
-        className={cn(
-          "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
-          selected ? "border-primary bg-primary" : "border-slate-400"
-        )}
-      >
-        {selected && <span className="w-2 h-2 rounded-full bg-white" />}
-      </span>
-      {label}
     </button>
   );
 }
@@ -285,7 +253,7 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
   const [officials, setOfficials] = useState(defaults.officials ?? {});
   const [settings, setSettings] = useState(defaults.settings!);
   const [tossWinnerId, setTossWinnerId] = useState<string>("");
-  const [tossDecision, setTossDecision] = useState<TossDecision | "">("");
+  const [battingFirstTeamId, setBattingFirstTeamId] = useState<string>("");
   const [playingXiA, setPlayingXiA] = useState<string[]>(defaults.playingXiA ?? []);
   const [playingXiB, setPlayingXiB] = useState<string[]>(defaults.playingXiB ?? []);
   const [teamAMeta, setTeamAMeta] = useState<TeamPlayingMeta>(defaults.teamAMeta ?? {});
@@ -294,10 +262,15 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
   const [nonStrikerId, setNonStrikerId] = useState("");
   const [openingBowlerId, setOpeningBowlerId] = useState("");
 
+  const tossDecision = useMemo((): TossDecision | null => {
+    if (!tossWinnerId || !battingFirstTeamId) return null;
+    return deriveTossDecisionFromBattingFirst(tossWinnerId, battingFirstTeamId);
+  }, [tossWinnerId, battingFirstTeamId]);
+
   const tossTeams = useMemo(() => {
-    if (!tossWinnerId || !tossDecision) return null;
-    return deriveTeamsFromToss(fixture, tossWinnerId, tossDecision);
-  }, [fixture, tossWinnerId, tossDecision]);
+    if (!battingFirstTeamId) return null;
+    return deriveTeamsFromBattingFirst(fixture, battingFirstTeamId);
+  }, [fixture, battingFirstTeamId]);
 
   const battingRoster = useMemo(() => {
     if (!tossTeams) return [];
@@ -323,7 +296,7 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
 
   const buildInput = (): MatchSetupInput => ({
     tossWinnerId,
-    tossDecision: tossDecision as TossDecision,
+    tossDecision: tossDecision!,
     playingXiA,
     playingXiB,
     teamAMeta,
@@ -341,7 +314,7 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
         return null;
       case "toss":
         if (!tossWinnerId) return "Select the toss winner.";
-        if (!tossDecision) return "Select bat first or bowl first.";
+        if (!battingFirstTeamId) return "Select which team bats first.";
         return null;
       case "playing_xi": {
         const errA = validatePlayingXi(playingXiA, rosterA, fixture.teamAName);
@@ -529,32 +502,37 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
               </div>
               {tossWinnerId && (
                 <div className="space-y-3 pt-2">
-                  <p className="text-sm font-semibold text-slate-500">Toss decision</p>
-                  <RadioChoice
-                    label="Bat First"
-                    selected={tossDecision === "bat"}
-                    onSelect={() => setTossDecision("bat")}
-                  />
-                  <RadioChoice
-                    label="Bowl First"
-                    selected={tossDecision === "bowl"}
-                    onSelect={() => setTossDecision("bowl")}
-                  />
+                  <p className="text-sm font-semibold text-slate-500">Batting first</p>
+                  <p className="text-xs text-slate-500">
+                    Choose who opens the innings — toss decision updates automatically.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <TeamCard
+                      name={fixture.teamAName}
+                      subtitle="Will bat first"
+                      selected={battingFirstTeamId === fixture.teamAId}
+                      onSelect={() => setBattingFirstTeamId(fixture.teamAId)}
+                    />
+                    <TeamCard
+                      name={fixture.teamBName}
+                      subtitle="Will bat first"
+                      selected={battingFirstTeamId === fixture.teamBId}
+                      onSelect={() => setBattingFirstTeamId(fixture.teamBId)}
+                    />
+                  </div>
                 </div>
               )}
-              {tossTeams && (
+              {tossTeams && tossDecision && (
                 <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 space-y-2">
                   <p className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
-                    <Sparkles className="w-4 h-4" /> Auto-calculated
+                    <Sparkles className="w-4 h-4" /> Toss updated
                   </p>
-                  {tossSummaryLines(fixture, tossWinnerId, tossDecision as TossDecision).map(
-                    (line) => (
-                      <p key={line} className="flex items-center gap-2 font-semibold">
-                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                        {line}
-                      </p>
-                    )
-                  )}
+                  {tossSummaryLines(fixture, tossWinnerId, tossDecision).map((line) => (
+                    <p key={line} className="flex items-center gap-2 font-semibold">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      {line}
+                    </p>
+                  ))}
                 </div>
               )}
             </>
@@ -765,8 +743,8 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
                   <div className="col-span-2">
                     <p className="text-slate-500 text-xs">Toss</p>
                     <p>
-                      {teamName(fixture, tossWinnerId)} won the toss ·{" "}
-                      {tossDecision === "bat" ? "Bat First" : "Bowl First"}
+                      {teamName(fixture, tossWinnerId)} won the toss · elected to{" "}
+                      {tossDecision === "bat" ? "bat" : "bowl"}
                     </p>
                   </div>
                   <div>

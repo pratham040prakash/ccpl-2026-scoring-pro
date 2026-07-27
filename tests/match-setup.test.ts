@@ -3,6 +3,9 @@ import type { Fixture } from "@/types";
 import type { MatchSetupInput } from "@/types/match-setup";
 import {
   deriveTeamsFromToss,
+  deriveTeamsFromBattingFirst,
+  deriveTossDecisionFromBattingFirst,
+  resolveTossFromBattingFirst,
   validateMatchSetup,
   buildMatchFromSetup,
   defaultSetupDraft,
@@ -53,6 +56,33 @@ function fullSetup(
     settings: draft.settings!,
   };
 }
+
+describe("deriveTossDecisionFromBattingFirst", () => {
+  it("winner elected to bat when they bat first", () => {
+    expect(deriveTossDecisionFromBattingFirst("team-b", "team-b")).toBe("bat");
+  });
+
+  it("winner elected to bowl when opponent bats first", () => {
+    expect(deriveTossDecisionFromBattingFirst("team-b", "team-a")).toBe("bowl");
+  });
+});
+
+describe("deriveTeamsFromBattingFirst", () => {
+  it("sets bowling team as opponent", () => {
+    const r = deriveTeamsFromBattingFirst(fixture, "team-a");
+    expect(r.battingTeamId).toBe("team-a");
+    expect(r.bowlingTeamId).toBe("team-b");
+  });
+});
+
+describe("resolveTossFromBattingFirst", () => {
+  it("combines batting-first choice with toss record", () => {
+    const r = resolveTossFromBattingFirst(fixture, "team-b", "team-a");
+    expect(r.tossDecision).toBe("bowl");
+    expect(r.battingTeamName).toBe("The Dial-In XI");
+    expect(r.bowlingTeamName).toBe("Slog Squad");
+  });
+});
 
 describe("deriveTeamsFromToss", () => {
   it("winner bats first when choosing bat", () => {
