@@ -48,6 +48,7 @@ export function calculateRequiredRunRate(
   return (remaining / ballsLeft) * 6;
 }
 
+/** Net Run Rate = (total runs scored / total overs faced) − (total runs conceded / total overs bowled) */
 export function calculateNRR(
   runsFor: number,
   oversFor: number,

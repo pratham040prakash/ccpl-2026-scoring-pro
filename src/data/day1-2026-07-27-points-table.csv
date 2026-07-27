@@ -1,0 +1,19 @@
+teamId,teamName,played,won,lost,tied,nr,points,runsFor,runsAgainst,nrr,rank
+aura-strikers,Aura Strikers,1,1,0,0,0,2,65,16,8.166666666666668,1
+rising-stars,Rising Stars,1,1,0,0,0,2,42,19,3.8333333333333335,2
+bengaluru-blasters,Bengaluru Blasters,1,1,0,0,0,2,51,34,2.833333333333333,3
+the-cluster-xi,The Cluster XI,1,1,0,0,0,2,19,18,1.75,4
+play-bold-xi,Play Bold XI,1,1,0,0,0,2,45,36,1.5,5
+data-warriors,Data Warriors,1,1,0,0,0,2,41,32,1.5,6
+slog-squad,Slog Squad,0,0,0,0,0,0,0,0,0,7
+royal-ciscoians-bengaluru-rcb,Royal Ciscoians Bengaluru RCB,0,0,0,0,0,0,0,0,0,8
+collab-super-kings,Collab Super Kings,0,0,0,0,0,0,0,0,0,9
+cisco-super-kings-csk,Cisco Super Kings CSK,0,0,0,0,0,0,0,0,0,10
+lifecycle-cricket-team,Lifecycle Cricket Team,0,0,0,0,0,0,0,0,0,11
+11-daulath-s,11 Daulath's,0,0,0,0,0,0,0,0,0,12
+sixco-cc-xi,Sixco CC XI,1,0,1,0,0,0,36,45,-1.5,13
+sixco-superstrikers,Sixco SuperStrikers,1,0,1,0,0,0,32,41,-1.5,14
+collab-ops-challengers,Collab Ops Challengers,1,0,1,0,0,0,18,19,-1.75,15
+the-dial-in-xi,The Dial-In XI,1,0,1,0,0,0,34,51,-2.833333333333333,16
+hit-and-run,Hit and Run,1,0,1,0,0,0,19,42,-3.8333333333333335,17
+cloud-chorus-xi,Cloud Chorus XI,1,0,1,0,0,0,16,65,-8.166666666666668,18

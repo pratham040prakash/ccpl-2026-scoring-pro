@@ -50,7 +50,7 @@ export function PointsTable({ entries, compact }: PointsTableProps) {
         </table>
       </div>
       <p className="text-xs text-slate-500 p-3 border-t border-slate-200/10">
-        Top 8 qualify · Points → NRR → Runs Scored
+        Top 8 qualify · Points → NRR → Runs Scored · NRR = (runs scored ÷ overs faced) − (runs conceded ÷ overs bowled)
       </p>
     </div>
   );
