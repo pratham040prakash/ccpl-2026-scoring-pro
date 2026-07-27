@@ -1,5 +1,5 @@
 import teamsData from "@/data/teams.json";
-import type { Fixture, Match, TossDecision } from "@/types";
+import type { Fixture, Innings, Match, TossDecision } from "@/types";
 import type { MatchSetupInput, TeamPlayingMeta } from "@/types/match-setup";
 import { getTeamRoster, type RosterPlayer } from "@/lib/live/player-roster";
 
@@ -225,6 +225,38 @@ export function isMatchSetupComplete(match: Match | null | undefined): boolean {
       match.playingXiA?.length &&
       match.playingXiB?.length
   );
+}
+
+/** True once any ball has been scored — toss / batting order must stay locked. */
+export function hasLiveScoringStarted(innings: Innings[]): boolean {
+  return innings.some(
+    (i) =>
+      (i.nextSequence ?? 0) > 0 ||
+      i.runs > 0 ||
+      i.wickets > 0 ||
+      i.balls > 0 ||
+      i.completed
+  );
+}
+
+export function teamNameFromMatch(match: Match, teamId: string | undefined): string {
+  if (!teamId) return "";
+  return teamId === match.teamAId ? match.teamAName : match.teamBName;
+}
+
+export function currentMatchTeams(match: Match, innings?: Innings | null): TossTeamsResult {
+  const battingTeamId =
+    match.battingTeamId ?? innings?.teamId ?? match.battingFirstTeamId ?? match.teamAId;
+  const bowlingTeamId =
+    match.bowlingTeamId ??
+    match.bowlingFirstTeamId ??
+    (battingTeamId === match.teamAId ? match.teamBId : match.teamAId);
+  return {
+    battingTeamId,
+    bowlingTeamId,
+    battingTeamName: teamNameFromMatch(match, battingTeamId),
+    bowlingTeamName: teamNameFromMatch(match, bowlingTeamId),
+  };
 }
 
 export function tossSummaryLines(

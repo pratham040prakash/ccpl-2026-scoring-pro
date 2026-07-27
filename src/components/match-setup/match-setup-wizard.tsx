@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -11,7 +11,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import type { Fixture, TossDecision } from "@/types";
+import type { Fixture, Match, TossDecision } from "@/types";
 import {
   MATCH_SETUP_STEPS,
   type MatchSetupInput,
@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   fixture: Fixture;
+  existingMatch?: Match | null;
   onComplete: (input: MatchSetupInput) => Promise<void>;
   busy?: boolean;
 };
@@ -242,7 +243,7 @@ function PlayerPickGrid({
   );
 }
 
-export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
+export function MatchSetupWizard({ fixture, existingMatch, onComplete, busy }: Props) {
   const defaults = useMemo(() => defaultSetupDraft(fixture), [fixture]);
   const rosterA = useMemo(() => getTeamRoster(fixture.teamAName), [fixture.teamAName]);
   const rosterB = useMemo(() => getTeamRoster(fixture.teamBName), [fixture.teamBName]);
@@ -261,6 +262,22 @@ export function MatchSetupWizard({ fixture, onComplete, busy }: Props) {
   const [strikerId, setStrikerId] = useState("");
   const [nonStrikerId, setNonStrikerId] = useState("");
   const [openingBowlerId, setOpeningBowlerId] = useState("");
+
+  useEffect(() => {
+    if (!existingMatch?.tossWinnerId) return;
+    setTossWinnerId(existingMatch.tossWinnerId);
+    const batFirst =
+      existingMatch.battingFirstTeamId ??
+      existingMatch.battingTeamId ??
+      "";
+    if (batFirst) setBattingFirstTeamId(batFirst);
+  }, [existingMatch]);
+
+  useEffect(() => {
+    setStrikerId("");
+    setNonStrikerId("");
+    setOpeningBowlerId("");
+  }, [battingFirstTeamId]);
 
   const tossDecision = useMemo((): TossDecision | null => {
     if (!tossWinnerId || !battingFirstTeamId) return null;

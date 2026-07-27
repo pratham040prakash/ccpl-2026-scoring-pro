@@ -73,6 +73,7 @@ import { queueOfflineAction } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
 import { generateId } from "@/lib/utils";
 import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
+import { currentMatchTeams, hasLiveScoringStarted } from "@/lib/live/match-setup";
 import { SecondInningsSetupSheet } from "@/components/match-setup/second-innings-setup-sheet";
 
 const DISMISSALS: DismissalType[] = [
@@ -301,13 +302,14 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       .finally(() => setBusy(false));
   }, [innings, battingXi, bowlingXi, battingOrder, participantsSynced, busy]);
 
-  const battingTeamName = innings?.teamName ?? fixture?.teamAName ?? "";
-  const bowlingTeamName =
-    innings && fixture
-      ? innings.teamId === fixture.teamAId
-        ? fixture.teamBName
-        : fixture.teamAName
-      : "";
+  const matchTeams = useMemo(
+    () => (match ? currentMatchTeams(match, innings) : null),
+    [match, innings]
+  );
+  const battingTeamName = matchTeams?.battingTeamName ?? innings?.teamName ?? fixture?.teamAName ?? "";
+  const bowlingTeamName = matchTeams?.bowlingTeamName ?? "";
+  const canEditMatchSetup =
+    Boolean(match && innings && balls.length === 0 && !hasLiveScoringStarted(live.innings));
 
   const isBattingCaptain = useCallback(
     (p: RosterPlayer) => isCaptain(p, battingTeamName),
@@ -754,6 +756,13 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
               )}
             </div>
             <p className="text-sm opacity-80">{fixture.matchId} · {innings.teamName}</p>
+            {matchTeams && (
+              <p className="text-xs opacity-75 mt-1">
+                Batting: <strong>{matchTeams.battingTeamName}</strong>
+                {" · "}
+                Bowling: <strong>{matchTeams.bowlingTeamName}</strong>
+              </p>
+            )}
             <p className="text-4xl font-black tabular-nums mt-1">
               {innings.runs}/{innings.wickets}
               <span className="text-lg font-normal ml-2 opacity-80">
@@ -782,6 +791,22 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
       {(participantError || pickerMessage || scoringBlockedReason || live.ballsError) && (
         <div className="glass-card p-3 border border-amber-500/40 bg-amber-500/10 text-amber-100 text-sm">
           {participantError ?? pickerMessage ?? live.ballsError ?? scoringBlockedReason}
+        </div>
+      )}
+
+      {canEditMatchSetup && (
+        <div className="glass-card p-3 border border-primary/30 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span>
+            Wrong batting/bowling team?{" "}
+            <strong>{matchTeams?.battingTeamName}</strong> bats ·{" "}
+            <strong>{matchTeams?.bowlingTeamName}</strong> bowls
+          </span>
+          <Link
+            href={`/admin/matches/${matchId}/setup`}
+            className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold"
+          >
+            Edit Match Setup
+          </Link>
         </div>
       )}
 

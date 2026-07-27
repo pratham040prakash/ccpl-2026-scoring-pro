@@ -9,7 +9,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { initializeLiveMatch } from "@/lib/engine/live-scoring-service";
 import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
-import { isMatchSetupComplete } from "@/lib/live/match-setup";
+import { hasLiveScoringStarted } from "@/lib/live/match-setup";
 import type { MatchSetupInput } from "@/types/match-setup";
 
 export default function MatchSetupPage({
@@ -55,7 +55,9 @@ export default function MatchSetupPage({
   }
 
   const shouldRedirect =
-    live.isLive || live.innings.length > 0 || isMatchSetupComplete(live.match);
+    hasLiveScoringStarted(live.innings) ||
+    live.match?.status === "completed" ||
+    live.match?.locked === true;
 
   useEffect(() => {
     if (!authLoading && !live.loading && shouldRedirect) {
@@ -117,8 +119,21 @@ export default function MatchSetupPage({
         </div>
       )}
 
+      {hasLiveScoringStarted(live.innings) && (
+        <div className="glass-card p-4 mb-6 border border-amber-500/30 text-amber-700 text-sm">
+          Scoring has started — toss and batting/bowling teams are locked for this match.
+        </div>
+      )}
+
+      {!hasLiveScoringStarted(live.innings) && live.innings.length > 0 && (
+        <div className="glass-card p-4 mb-6 border border-primary/30 text-primary text-sm">
+          Updating setup will replace the current toss and opening players (no balls scored yet).
+        </div>
+      )}
+
       <MatchSetupWizard
         fixture={fixture}
+        existingMatch={live.match}
         onComplete={handleComplete}
         busy={busy || !startGate.ok}
       />

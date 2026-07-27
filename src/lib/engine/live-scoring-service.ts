@@ -37,6 +37,7 @@ import {
   deleteBall,
   saveAuditEntry,
   createMatchDoc,
+  getBalls,
   getInnings,
   getMatch,
 } from "@/lib/firebase/firestore";
@@ -221,7 +222,42 @@ export async function initializeLiveMatch(
   if (isFirebaseConfigured()) {
     const existingInnings = await getInnings(matchId);
     const activeFirst = existingInnings.find((i) => i.inningsNumber === 1 && !i.completed);
-    if (activeFirst) {
+
+    if (setup) {
+      const match = buildMatchFromSetup(fixture, setup);
+      const openers = {
+        strikerId: setup.strikerId,
+        nonStrikerId: setup.nonStrikerId,
+        bowlerId: setup.openingBowlerId,
+      };
+
+      if (activeFirst) {
+        const existingBalls = await getBalls(activeFirst.id);
+        const started =
+          existingBalls.length > 0 || (activeFirst.nextSequence ?? 0) > 0 || activeFirst.runs > 0;
+        if (started) {
+          throw new Error(
+            "Scoring has already started. Toss and batting/bowling teams cannot be changed."
+          );
+        }
+        const innings: Innings = {
+          ...createInitialInnings(match, 1, openers),
+          id: activeFirst.id,
+        };
+        await createMatchDoc(match);
+        await saveInnings(innings);
+        await updateMatch(match.id, { status: "live" });
+        await updateFixture(fixture.id, { status: "live" });
+        logScoring("firestore_write", "Match setup applied to existing innings", {
+          matchId: match.id,
+          battingTeamId: match.battingTeamId,
+          bowlingTeamId: match.bowlingTeamId,
+        });
+        await cacheMatch(match);
+        await cacheInnings(innings);
+        return { match, innings };
+      }
+    } else if (activeFirst) {
       const existingMatch = await getMatch(matchId);
       if (existingMatch) {
         logScoring("firestore_read", "Reusing existing live match", { matchId });
@@ -252,7 +288,12 @@ export async function initializeLiveMatch(
     await saveInnings(innings);
     await updateMatch(match.id, { status: "live" });
     await updateFixture(fixture.id, { status: "live" });
-    logScoring("firestore_write", "Live match started", { matchId: match.id, inningsId: innings.id });
+    logScoring("firestore_write", "Live match started", {
+      matchId: match.id,
+      inningsId: innings.id,
+      battingTeamId: match.battingTeamId,
+      bowlingTeamId: match.bowlingTeamId,
+    });
   }
 
   await cacheMatch(match);

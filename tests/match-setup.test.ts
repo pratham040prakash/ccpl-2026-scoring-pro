@@ -9,6 +9,7 @@ import {
   validateMatchSetup,
   buildMatchFromSetup,
   defaultSetupDraft,
+  hasLiveScoringStarted,
 } from "@/lib/live/match-setup";
 import { getTeamRoster } from "@/lib/live/player-roster";
 
@@ -56,6 +57,40 @@ function fullSetup(
     settings: draft.settings!,
   };
 }
+
+describe("hasLiveScoringStarted", () => {
+  it("is false before any delivery", () => {
+    expect(
+      hasLiveScoringStarted([
+        {
+          id: "inn1",
+          matchId: "m1",
+          teamId: "a",
+          teamName: "A",
+          inningsNumber: 1,
+          runs: 0,
+          wickets: 0,
+          overs: 0,
+          balls: 0,
+          extras: { total: 0, wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0 },
+          runRate: 0,
+          partnership: {
+            runs: 0,
+            balls: 0,
+            batsman1Id: "",
+            batsman2Id: "",
+            batsman1Runs: 0,
+            batsman2Runs: 0,
+          },
+          completed: false,
+          nextSequence: 0,
+          createdAt: "",
+          updatedAt: "",
+        },
+      ])
+    ).toBe(false);
+  });
+});
 
 describe("deriveTossDecisionFromBattingFirst", () => {
   it("winner elected to bat when they bat first", () => {
