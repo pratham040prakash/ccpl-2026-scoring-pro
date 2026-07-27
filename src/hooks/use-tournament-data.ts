@@ -165,17 +165,20 @@ export function usePointsTable() {
   const query = useQuery({
     queryKey: ["pointsTable", scoreKey],
     queryFn: async () => {
+      const localTable = getPointsTable();
+      const localPlayed = localTable.reduce((sum, entry) => sum + entry.played, 0);
+
       if (isFirebaseConfigured()) {
         try {
           const table = await fetchPointsTableFromFirestore();
-          if (table.length) return table;
+          const remotePlayed = table.reduce((sum, entry) => sum + entry.played, 0);
+          if (table.length && remotePlayed > localPlayed) return table;
         } catch {
           /* fall through */
         }
       }
-      if (scoreKey > 0) {
-        return getPointsTable();
-      }
+
+      if (localPlayed > 0) return localTable;
       return emptyPointsTable();
     },
     refetchInterval: isFirebaseConfigured() ? 8000 : false,

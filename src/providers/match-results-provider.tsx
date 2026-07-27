@@ -14,11 +14,15 @@ import type { Fixture, PointsTableEntry } from "@/types";
 import type { ScoreImportRow, StoredMatchScore } from "@/types/scores";
 import { DEMO_DATA } from "@/lib/seed";
 import {
+  getOfficialDay1Scores,
+  mergeWithOfficialScores,
+  saveUserScoresOnly,
+} from "@/lib/scores/official-results";
+import {
   buildPointsTableFromScores,
   buildStoredScore,
   loadStoredScores,
   mergeFixturesWithScores,
-  saveStoredScores,
 } from "@/lib/scores/store";
 
 interface MatchResultsContextValue {
@@ -33,17 +37,19 @@ interface MatchResultsContextValue {
 const MatchResultsContext = createContext<MatchResultsContextValue | null>(null);
 
 export function MatchResultsProvider({ children }: { children: ReactNode }) {
-  const [scores, setScores] = useState<Record<string, StoredMatchScore>>({});
+  const [scores, setScores] = useState<Record<string, StoredMatchScore>>(() =>
+    mergeWithOfficialScores(typeof window !== "undefined" ? loadStoredScores() : {})
+  );
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    setScores(loadStoredScores());
+    setScores(mergeWithOfficialScores(loadStoredScores()));
   }, []);
 
   const persist = useCallback(
     (next: Record<string, StoredMatchScore>) => {
       setScores(next);
-      saveStoredScores(next);
+      saveUserScoresOnly(next);
       queryClient.invalidateQueries({ queryKey: ["fixtures"] });
       queryClient.invalidateQueries({ queryKey: ["pointsTable"] });
     },
