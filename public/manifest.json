@@ -2,7 +2,7 @@
   "name": "CCPL 2026 Scoring Pro",
   "short_name": "CCPL Scoring",
   "description": "Enterprise cricket tournament management and live scoring for CCPL 2026",
-  "start_url": "/",
+  "start_url": "/?app=v3",
   "display": "standalone",
   "background_color": "#030712",
   "theme_color": "#0066cc",

@@ -1,7 +1,13 @@
 import { DAY1_MATCH_RESULTS_CSV } from "@/data/day1-2026-07-27-match-results";
 import { buildSeedData } from "@/lib/seed";
+import type { PointsTableEntry } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
-import { buildStoredScore, parseScoreCsv, saveStoredScores } from "@/lib/scores/store";
+import {
+  buildPointsTableFromScores,
+  buildStoredScore,
+  parseScoreCsv,
+  saveStoredScores,
+} from "@/lib/scores/store";
 
 let day1Cache: Record<string, StoredMatchScore> | null = null;
 
@@ -30,6 +36,16 @@ export function mergeWithOfficialScores(
   stored: Record<string, StoredMatchScore>
 ): Record<string, StoredMatchScore> {
   return { ...getOfficialDay1Scores(), ...stored };
+}
+
+/** Client-safe Day 1 points table — always available without API or localStorage. */
+export function getBundledOfficialPointsTable(): PointsTableEntry[] {
+  const seed = buildSeedData();
+  return buildPointsTableFromScores(seed.teams, seed.fixtures, getOfficialDay1Scores());
+}
+
+export function officialStandingsPlayedCount(table: PointsTableEntry[]): number {
+  return table.reduce((sum, entry) => sum + entry.played, 0);
 }
 
 export function saveUserScoresOnly(all: Record<string, StoredMatchScore>): void {

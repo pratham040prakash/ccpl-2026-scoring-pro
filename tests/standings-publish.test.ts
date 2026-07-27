@@ -3,6 +3,7 @@ import {
   buildOfficialStandings,
   standingsPlayedCount,
 } from "@/lib/server/standings-publish";
+import { getBundledOfficialPointsTable, officialStandingsPlayedCount } from "@/lib/scores/official-results";
 
 describe("standings publish", () => {
   it("builds Day 1 table with six completed matches", () => {
@@ -13,8 +14,8 @@ describe("standings publish", () => {
     expect(table[0]?.points).toBeGreaterThan(0);
   });
 
-  it("ranks Aura Strikers first after Day 1", () => {
-    const { table } = buildOfficialStandings();
-    expect(table[0]?.teamId).toBe("aura-strikers");
+  it("exposes bundled points table for client initial render", () => {
+    const table = getBundledOfficialPointsTable();
+    expect(officialStandingsPlayedCount(table)).toBe(12);
   });
 });

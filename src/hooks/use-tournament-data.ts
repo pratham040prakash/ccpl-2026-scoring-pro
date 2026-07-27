@@ -13,9 +13,29 @@ import {
   getTeams,
 } from "@/lib/firebase/firestore";
 import { DEMO_DATA } from "@/lib/seed";
+import {
+  getBundledOfficialPointsTable,
+  officialStandingsPlayedCount,
+} from "@/lib/scores/official-results";
 import { useMatchResults } from "@/providers/match-results-provider";
+import type { Player, PointsTableEntry } from "@/types";
 
-import type { Player } from "@/types";
+function pickBestPointsTable(
+  candidates: PointsTableEntry[][]
+): PointsTableEntry[] {
+  let best = getBundledOfficialPointsTable();
+  let bestPlayed = officialStandingsPlayedCount(best);
+
+  for (const table of candidates) {
+    const played = officialStandingsPlayedCount(table);
+    if (played > bestPlayed) {
+      best = table;
+      bestPlayed = played;
+    }
+  }
+
+  return best;
+}
 
 function orderPlayers(players: Player[], playerIds?: string[]): Player[] {
   if (!playerIds?.length) {
@@ -147,35 +167,31 @@ export function usePointsTable() {
 
   const query = useQuery({
     queryKey: ["pointsTable", scoreKey],
+    initialData: getBundledOfficialPointsTable,
     queryFn: async () => {
       const localTable = getPointsTable();
-      const localPlayed = localTable.reduce((sum, entry) => sum + entry.played, 0);
+      const candidates: PointsTableEntry[][] = [localTable];
 
       try {
         const res = await fetch("/api/standings", { cache: "no-store" });
         if (res.ok) {
-          const payload = (await res.json()) as { table?: typeof localTable };
-          const serverTable = payload.table ?? [];
-          const serverPlayed = serverTable.reduce((sum, entry) => sum + entry.played, 0);
-          if (serverPlayed >= localPlayed && serverPlayed > 0) {
-            return serverTable;
-          }
+          const payload = (await res.json()) as { table?: PointsTableEntry[] };
+          if (payload.table?.length) candidates.unshift(payload.table);
         }
       } catch {
-        /* fall through to client/firestore sources */
+        /* optional server sync */
       }
 
       if (isFirebaseConfigured()) {
         try {
           const table = await fetchPointsTableFromFirestore();
-          const remotePlayed = table.reduce((sum, entry) => sum + entry.played, 0);
-          if (remotePlayed > localPlayed) return table;
+          if (table.length) candidates.unshift(table);
         } catch {
           /* fall through */
         }
       }
 
-      return localTable;
+      return pickBestPointsTable(candidates);
     },
     refetchInterval: 15000,
   });

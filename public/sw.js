@@ -1,9 +1,9 @@
-const CACHE_NAME = "ccpl-scoring-pro-v2";
-const OFFLINE_URLS = ["/", "/fixtures", "/standings", "/manifest.json"];
+const CACHE_NAME = "ccpl-scoring-pro-v3";
+const STATIC_ASSETS = ["/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
@@ -11,7 +11,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
@@ -21,21 +21,33 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-  const skipCache =
-    url.hostname.includes("googleapis.com") ||
-    url.hostname.includes("firebaseio.com") ||
-    url.hostname.includes("firebaseapp.com") ||
-    url.pathname.startsWith("/api/");
+  if (url.origin !== self.location.origin) return;
 
-  if (skipCache) return;
+  // Never cache API or navigations — avoids stale standings on mobile PWA.
+  if (
+    url.pathname.startsWith("/api/") ||
+    event.request.mode === "navigate" ||
+    event.request.destination === "document"
+  ) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((response) => {
+        if (!response.ok) return response;
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
-      })
-      .catch(() => caches.match(event.request).then((r) => r || caches.match("/")))
+      });
+    })
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
