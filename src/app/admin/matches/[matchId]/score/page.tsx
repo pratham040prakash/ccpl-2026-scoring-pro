@@ -43,6 +43,12 @@ export default function AdminMatchScorePage({
         </Link>
         <div className="flex gap-2">
           <Link
+            href={`/match/${matchId}/score/mobile`}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm"
+          >
+            Mobile Scorer
+          </Link>
+          <Link
             href={`/live/${matchId}`}
             className="flex items-center gap-2 px-3 py-2 rounded-lg glass-card text-sm"
           >

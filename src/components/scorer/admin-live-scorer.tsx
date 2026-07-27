@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   ClipboardList,
   Pause,
   Play,
@@ -90,6 +91,8 @@ const DISMISSALS: DismissalType[] = [
 
 interface AdminLiveScorerProps {
   matchId: string;
+  /** Full-screen phone layout — same scoring engine as desktop, mobile-optimized chrome. */
+  layout?: "desktop" | "mobile";
 }
 
 function pickInnings(live: Innings | undefined, local: Innings | null): Innings | null | undefined {
@@ -120,7 +123,8 @@ function mergeBallLists(remote: Ball[], pending: Ball[]): Ball[] {
   return Array.from(byId.values()).sort((a, b) => a.sequence - b.sequence);
 }
 
-export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
+export function AdminLiveScorer({ matchId, layout = "desktop" }: AdminLiveScorerProps) {
+  const isMobileLayout = layout === "mobile";
   const { user, profile } = useAuth();
   const live = useLiveMatch(matchId);
   const [busy, setBusy] = useState(false);
@@ -699,8 +703,33 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const need = match.target ? runsNeeded(match, innings) : undefined;
   const ballsLeft = ballsRemaining(match, innings);
 
+  const scoringPad = (
+    <ScoringPad
+      disabled={scoringDisabled}
+      paused={match.status === "paused"}
+      extrasMode={extrasMode}
+      wicketMode={wicketMode}
+      dismissals={DISMISSALS}
+      onScore={handleScore}
+      onExtrasMode={setExtrasMode}
+      onWicketMode={setWicketMode}
+      onPendingDismissal={setPendingDismissal}
+      lastBallLabel={
+        balls.length > 0
+          ? `${balls[balls.length - 1].overNumber}.${balls[balls.length - 1].ballNumber} (${balls[balls.length - 1].runs})`
+          : undefined
+      }
+    />
+  );
+
   return (
-    <div className="space-y-4 pb-32">
+    <div
+      className={
+        isMobileLayout
+          ? "space-y-3 pb-52 min-h-screen bg-slate-950 text-white px-3 pt-2"
+          : "space-y-4 pb-32"
+      }
+    >
       {match && secondInningsPending && (
         <SecondInningsSetupSheet
           open
@@ -740,53 +769,86 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         lastSyncAt={connection.lastSyncAt}
       />
 
-      {/* Header strip */}
-      <div className="glass-card p-4 gradient-hero text-white">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="live-badge">LIVE</span>
-              {match.status === "paused" && (
-                <span className="text-xs bg-amber-500/30 px-2 py-0.5 rounded-full">PAUSED</span>
-              )}
-              {connection.state !== "connected" && (
-                <span className="text-xs bg-amber-500/30 px-2 py-0.5 rounded-full">
-                  {connection.state === "offline" ? "Offline queue" : "Syncing"}
+      {isMobileLayout ? (
+        <div className="sticky top-0 z-40 -mx-3 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-3 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <Link href={`/live/${matchId}`} className="p-2 -ml-2 text-white" aria-label="Back to live">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="text-center min-w-0 flex-1">
+              <p className="text-xs text-slate-400 truncate">{fixture.matchId} · {innings.teamName}</p>
+              <p className="text-2xl font-black tabular-nums">
+                {innings.runs}/{innings.wickets}
+                <span className="text-sm font-normal text-slate-400 ml-2">
+                  ({formatOvers(innings.overs, innings.balls)})
                 </span>
-              )}
-            </div>
-            <p className="text-sm opacity-80">{fixture.matchId} · {innings.teamName}</p>
-            {matchTeams && (
-              <p className="text-xs opacity-75 mt-1">
-                Batting: <strong>{matchTeams.battingTeamName}</strong>
-                {" · "}
-                Bowling: <strong>{matchTeams.bowlingTeamName}</strong>
               </p>
-            )}
-            <p className="text-4xl font-black tabular-nums mt-1">
-              {innings.runs}/{innings.wickets}
-              <span className="text-lg font-normal ml-2 opacity-80">
-                ({formatOvers(innings.overs, innings.balls)})
-              </span>
-            </p>
+            </div>
+            <Link
+              href={`/admin/matches/${matchId}/score`}
+              className="text-xs text-slate-400 shrink-0 px-2 py-1"
+            >
+              Desktop
+            </Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1 text-sm">
-            <span>CRR: {innings.runRate.toFixed(2)}</span>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-2">
+            <span>CRR {innings.runRate.toFixed(2)}</span>
             {innings.requiredRunRate != null && (
-              <span>RRR: {innings.requiredRunRate.toFixed(2)}</span>
+              <span>RRR {innings.requiredRunRate.toFixed(2)}</span>
             )}
-            {match.target && <span>Target: {match.target}</span>}
-            {need != null && <span>Need: {need} off {ballsLeft}</span>}
-            {innings.projectedScore != null && (
-              <span>Proj: {Math.round(innings.projectedScore)}</span>
-            )}
-            {isPowerplay(innings) && <span className="text-amber-300">Powerplay</span>}
-            {innings.partnership && (
-              <span>P&apos;ship: {innings.partnership.runs} ({innings.partnership.balls})</span>
-            )}
+            {match.target && <span>Tgt {match.target}</span>}
+            {need != null && <span>Need {need} off {ballsLeft}</span>}
           </div>
         </div>
-      </div>
+      ) : (
+        /* Header strip */
+        <div className="glass-card p-4 gradient-hero text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="live-badge">LIVE</span>
+                {match.status === "paused" && (
+                  <span className="text-xs bg-amber-500/30 px-2 py-0.5 rounded-full">PAUSED</span>
+                )}
+                {connection.state !== "connected" && (
+                  <span className="text-xs bg-amber-500/30 px-2 py-0.5 rounded-full">
+                    {connection.state === "offline" ? "Offline queue" : "Syncing"}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm opacity-80">{fixture.matchId} · {innings.teamName}</p>
+              {matchTeams && (
+                <p className="text-xs opacity-75 mt-1">
+                  Batting: <strong>{matchTeams.battingTeamName}</strong>
+                  {" · "}
+                  Bowling: <strong>{matchTeams.bowlingTeamName}</strong>
+                </p>
+              )}
+              <p className="text-4xl font-black tabular-nums mt-1">
+                {innings.runs}/{innings.wickets}
+                <span className="text-lg font-normal ml-2 opacity-80">
+                  ({formatOvers(innings.overs, innings.balls)})
+                </span>
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1 text-sm">
+              <span>CRR: {innings.runRate.toFixed(2)}</span>
+              {innings.requiredRunRate != null && (
+                <span>RRR: {innings.requiredRunRate.toFixed(2)}</span>
+              )}
+              {match.target && <span>Target: {match.target}</span>}
+              {need != null && <span>Need: {need} off {ballsLeft}</span>}
+              {innings.projectedScore != null && (
+                <span>Proj: {Math.round(innings.projectedScore)}</span>
+              )}
+              {isPowerplay(innings) && <span className="text-amber-300">Powerplay</span>}
+              {innings.partnership && (
+                <span>P&apos;ship: {innings.partnership.runs} ({innings.partnership.balls})</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {(participantError || pickerMessage || scoringBlockedReason || live.ballsError) && (
         <div className="glass-card p-3 border border-amber-500/40 bg-amber-500/10 text-amber-100 text-sm">
@@ -794,7 +856,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         </div>
       )}
 
-      {canEditMatchSetup && (
+      {canEditMatchSetup && !isMobileLayout && (
         <div className="glass-card p-3 border border-primary/30 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span>
             Wrong batting/bowling team?{" "}
@@ -810,22 +872,7 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         </div>
       )}
 
-      <ScoringPad
-        disabled={scoringDisabled}
-        paused={match.status === "paused"}
-        extrasMode={extrasMode}
-        wicketMode={wicketMode}
-        dismissals={DISMISSALS}
-        onScore={handleScore}
-        onExtrasMode={setExtrasMode}
-        onWicketMode={setWicketMode}
-        onPendingDismissal={setPendingDismissal}
-        lastBallLabel={
-          balls.length > 0
-            ? `${balls[balls.length - 1].overNumber}.${balls[balls.length - 1].ballNumber} (${balls[balls.length - 1].runs})`
-            : undefined
-        }
-      />
+      {!isMobileLayout && scoringPad}
 
       <ParticipantWorkspace
         innings={innings}
@@ -903,43 +950,47 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         }}
       />
 
-      <MatchHealthPanel
-        matchId={matchId}
-        match={match}
-        innings={innings}
-        balls={balls}
-        connectionState={connection.state}
-        pendingCount={connection.pendingCount}
-        lastSyncAt={connection.lastSyncAt}
-        firestoreError={live.error}
-        ballsError={live.ballsError}
-        scoringReadOnly={scoringLock.readOnly}
-        lockHolder={scoringLock.holder}
-        networkOnline={connection.state !== "offline"}
-      />
+      {!isMobileLayout && (
+        <>
+          <MatchHealthPanel
+            matchId={matchId}
+            match={match}
+            innings={innings}
+            balls={balls}
+            connectionState={connection.state}
+            pendingCount={connection.pendingCount}
+            lastSyncAt={connection.lastSyncAt}
+            firestoreError={live.error}
+            ballsError={live.ballsError}
+            scoringReadOnly={scoringLock.readOnly}
+            lockHolder={scoringLock.holder}
+            networkOnline={connection.state !== "offline"}
+          />
 
-      <ScoringDebugPanel
-        matchId={matchId}
-        match={match}
-        innings={innings}
-        balls={balls}
-        userRole={profile?.role}
-        userId={user?.uid}
-        firestoreError={live.error}
-        ballsError={live.ballsError}
-        networkOnline={connection.state !== "offline"}
-        validationError={participantError ?? scoringBlockedReason ?? undefined}
-      />
+          <ScoringDebugPanel
+            matchId={matchId}
+            match={match}
+            innings={innings}
+            balls={balls}
+            userRole={profile?.role}
+            userId={user?.uid}
+            firestoreError={live.error}
+            ballsError={live.ballsError}
+            networkOnline={connection.state !== "offline"}
+            validationError={participantError ?? scoringBlockedReason ?? undefined}
+          />
 
-      <RecoveryCenter
-        balls={balls}
-        disabled={scoringDisabled}
-        onRestore={async (over, ball, reason) => {
-          setRestoreOver(String(over));
-          setRestoreBall(String(ball));
-          await handleRestore(reason);
-        }}
-      />
+          <RecoveryCenter
+            balls={balls}
+            disabled={scoringDisabled}
+            onRestore={async (over, ball, reason) => {
+              setRestoreOver(String(over));
+              setRestoreBall(String(ball));
+              await handleRestore(reason);
+            }}
+          />
+        </>
+      )}
 
       <div className="glass-card p-4 flex flex-wrap gap-2">
         <button
@@ -995,22 +1046,32 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         <p className="text-sm text-emerald-400">{finalizeMessage}</p>
       )}
 
-      <BallCorrectionPanel
-        balls={balls}
-        disabled={scoringDisabled}
-        onCorrect={async (ballId, action, reason) => {
-          if (!match || !innings) return;
-          const ball = balls.find((b) => b.id === ballId);
-          if (ball && !(await CONFIRM.editBall(formatBallForPicker(ball)))) return;
-          const su = await scoringUser();
-          const result = await editBallDelivery(match, innings, balls, ballId, action, reason, su);
-          setBootstrappedInnings(result.innings);
-          setPendingBalls([]);
-          bumpAudit();
-        }}
-      />
+      {!isMobileLayout && (
+        <BallCorrectionPanel
+          balls={balls}
+          disabled={scoringDisabled}
+          onCorrect={async (ballId, action, reason) => {
+            if (!match || !innings) return;
+            const ball = balls.find((b) => b.id === ballId);
+            if (ball && !(await CONFIRM.editBall(formatBallForPicker(ball)))) return;
+            const su = await scoringUser();
+            const result = await editBallDelivery(match, innings, balls, ballId, action, reason, su);
+            setBootstrappedInnings(result.innings);
+            setPendingBalls([]);
+            bumpAudit();
+          }}
+        />
+      )}
 
-      <BallAuditHistory matchId={match.id} refreshKey={auditRefreshKey} />
+      {!isMobileLayout && (
+        <BallAuditHistory matchId={match.id} refreshKey={auditRefreshKey} />
+      )}
+
+      {isMobileLayout && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-800 bg-slate-950/98 backdrop-blur p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {scoringPad}
+        </div>
+      )}
     </div>
   );
 }
