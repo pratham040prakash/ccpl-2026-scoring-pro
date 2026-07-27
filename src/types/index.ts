@@ -16,6 +16,15 @@ export type MatchStatus =
   | "published";
 
 export type TossDecision = "bat" | "bowl";
+
+export type {
+  MatchOfficials,
+  MatchSettingsConfig,
+  MatchSetupInput,
+  MatchSetupStep,
+  TeamPlayingMeta,
+} from "./match-setup";
+export { MATCH_SETUP_STEPS } from "./match-setup";
 export type DismissalType =
   | "bowled"
   | "caught"
@@ -152,10 +161,20 @@ export interface Match {
   teamBName: string;
   battingTeamId?: string;
   bowlingTeamId?: string;
+  battingFirstTeamId?: string;
+  bowlingFirstTeamId?: string;
   playingXiA: string[];
   playingXiB: string[];
+  teamAMeta?: import("./match-setup").TeamPlayingMeta;
+  teamBMeta?: import("./match-setup").TeamPlayingMeta;
   tossWinnerId?: string;
   tossDecision?: TossDecision;
+  openingStrikerId?: string;
+  openingNonStrikerId?: string;
+  openingBowlerId?: string;
+  officials?: import("./match-setup").MatchOfficials;
+  matchSettings?: import("./match-setup").MatchSettingsConfig;
+  setupCompletedAt?: string;
   target?: number;
   result?: MatchResult;
   locked: boolean;

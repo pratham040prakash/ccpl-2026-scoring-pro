@@ -16,8 +16,13 @@ import {
   rotateStrike,
 } from "./innings-metrics";
 import { getMilestoneCommentary } from "./commentary";
-import { defaultPlayingXi } from "@/lib/live/player-roster";
+import { defaultPlayingXi, resolvePlayingXi } from "@/lib/live/player-roster";
 import { canStartLiveScoring } from "@/lib/live/match-start";
+import {
+  buildMatchFromSetup,
+  validateMatchSetup,
+} from "@/lib/live/match-setup";
+import type { MatchSetupInput } from "@/types/match-setup";
 import {
   getFirebaseDb,
   isFirebaseConfigured,
@@ -65,6 +70,12 @@ export interface ScoringUser {
   idToken?: string;
 }
 
+export interface InningsOpeners {
+  strikerId: string;
+  nonStrikerId: string;
+  bowlerId: string;
+}
+
 function fixtureToMatch(fixture: Fixture, battingTeamId: string): Match {
   const now = new Date().toISOString();
   const battingFirst =
@@ -91,6 +102,8 @@ function fixtureToMatch(fixture: Fixture, battingTeamId: string): Match {
     teamBName: fixture.teamBName,
     battingTeamId: battingFirst,
     bowlingTeamId: bowlingFirst,
+    battingFirstTeamId: battingFirst,
+    bowlingFirstTeamId: bowlingFirst,
     playingXiA: xiA,
     playingXiB: xiB,
     locked: false,
@@ -101,20 +114,43 @@ function fixtureToMatch(fixture: Fixture, battingTeamId: string): Match {
   };
 }
 
-export function createInitialInnings(match: Match, inningsNumber: 1 | 2): Innings {
+export function createInitialInnings(
+  match: Match,
+  inningsNumber: 1 | 2,
+  openers?: InningsOpeners
+): Innings {
   const now = new Date().toISOString();
   const battingTeamId = match.battingTeamId ?? match.teamAId;
   const bowlingTeamId = match.bowlingTeamId ?? match.teamBId;
   const battingTeamName =
     battingTeamId === match.teamAId ? match.teamAName : match.teamBName;
-  const bowlingRoster =
-    battingTeamId === match.teamAId
-      ? defaultPlayingXi(match.teamBName)
-      : defaultPlayingXi(match.teamAName);
-  const battingRoster =
-    battingTeamId === match.teamAId
-      ? defaultPlayingXi(match.teamAName)
-      : defaultPlayingXi(match.teamBName);
+  const bowlingTeamName =
+    bowlingTeamId === match.teamAId ? match.teamAName : match.teamBName;
+
+  const battingRoster = resolvePlayingXi(
+    battingTeamName,
+    battingTeamId === match.teamAId ? match.playingXiA : match.playingXiB
+  );
+  const bowlingRoster = resolvePlayingXi(
+    bowlingTeamName,
+    bowlingTeamId === match.teamAId ? match.playingXiA : match.playingXiB
+  );
+
+  const strikerId =
+    openers?.strikerId ??
+    (inningsNumber === 1 ? match.openingStrikerId : undefined) ??
+    battingRoster[0]?.id ??
+    "";
+  const nonStrikerId =
+    openers?.nonStrikerId ??
+    (inningsNumber === 1 ? match.openingNonStrikerId : undefined) ??
+    battingRoster[1]?.id ??
+    "";
+  const bowlerId =
+    openers?.bowlerId ??
+    (inningsNumber === 1 ? match.openingBowlerId : undefined) ??
+    bowlingRoster[0]?.id ??
+    "";
 
   return {
     id: generateId("inn"),
@@ -131,14 +167,14 @@ export function createInitialInnings(match: Match, inningsNumber: 1 | 2): Inning
     partnership: {
       runs: 0,
       balls: 0,
-      batsman1Id: battingRoster[0]?.id ?? "",
-      batsman2Id: battingRoster[1]?.id ?? "",
+      batsman1Id: strikerId,
+      batsman2Id: nonStrikerId,
       batsman1Runs: 0,
       batsman2Runs: 0,
     },
-    strikerId: battingRoster[0]?.id,
-    nonStrikerId: battingRoster[1]?.id,
-    bowlerId: bowlingRoster[0]?.id,
+    strikerId,
+    nonStrikerId,
+    bowlerId,
     completed: false,
     nextSequence: 0,
     createdAt: now,
@@ -166,11 +202,18 @@ export async function updateInningsParticipants(
 
 export async function initializeLiveMatch(
   fixture: Fixture,
-  battingTeamId?: string
+  setup?: MatchSetupInput
 ): Promise<{ match: Match; innings: Innings }> {
   const gate = canStartLiveScoring(fixture);
   if (!gate.ok) {
     throw new Error(gate.reason);
+  }
+
+  if (setup) {
+    const validationError = validateMatchSetup(fixture, setup);
+    if (validationError) {
+      throw new Error(validationError);
+    }
   }
 
   const matchId = fixture.matchDocId ?? fixture.id;
@@ -189,9 +232,20 @@ export async function initializeLiveMatch(
     }
   }
 
-  const batId = battingTeamId ?? fixture.teamAId;
-  const match = fixtureToMatch(fixture, batId);
-  const innings = createInitialInnings(match, 1);
+  const match = setup
+    ? buildMatchFromSetup(fixture, setup)
+    : fixtureToMatch(fixture, fixture.teamAId);
+  const innings = createInitialInnings(
+    match,
+    1,
+    setup
+      ? {
+          strikerId: setup.strikerId,
+          nonStrikerId: setup.nonStrikerId,
+          bowlerId: setup.openingBowlerId,
+        }
+      : undefined
+  );
 
   if (isFirebaseConfigured()) {
     await createMatchDoc(match);
@@ -588,7 +642,11 @@ export async function editBallDelivery(
   return { ball: updatedBall, innings: finalInnings, balls: newBalls };
 }
 
-export async function startSecondInnings(match: Match, firstInnings: Innings): Promise<Innings> {
+export async function startSecondInnings(
+  match: Match,
+  firstInnings: Innings,
+  openers?: InningsOpeners
+): Promise<Innings> {
   const target = firstInnings.runs + 1;
   const swapped = {
     ...match,
@@ -609,7 +667,7 @@ export async function startSecondInnings(match: Match, firstInnings: Innings): P
     battingTeamId: swapped.battingTeamId,
     bowlingTeamId: swapped.bowlingTeamId,
   });
-  const innings = createInitialInnings(swapped, 2);
+  const innings = createInitialInnings(swapped, 2, openers);
   await saveInnings(innings);
   await cacheInnings(innings);
   logScoring("firestore_write", "Second innings started", { inningsId: innings.id, target });

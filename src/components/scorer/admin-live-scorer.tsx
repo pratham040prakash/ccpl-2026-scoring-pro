@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
+  ClipboardList,
   Pause,
   Play,
   Undo2,
@@ -12,7 +14,6 @@ import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
 import {
   applyScoringAction,
-  initializeLiveMatch,
   undoLastBall,
   restoreToOver,
   pauseMatch,
@@ -72,6 +73,7 @@ import { queueOfflineAction } from "@/lib/offline/store";
 import { syncPendingActions } from "@/lib/offline/sync";
 import { generateId } from "@/lib/utils";
 import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
+import { SecondInningsSetupSheet } from "@/components/match-setup/second-innings-setup-sheet";
 
 const DISMISSALS: DismissalType[] = [
   "bowled",
@@ -140,6 +142,10 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [finalizeMessage, setFinalizeMessage] = useState<string | null>(null);
   const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  const [secondInningsPending, setSecondInningsPending] = useState<{
+    firstInnings: Innings;
+    target: number;
+  } | null>(null);
 
   const fixture = live.fixture;
   const match = pickMatch(live.match, bootstrappedMatch);
@@ -416,25 +422,23 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
     openParticipantPick("bowler");
   };
 
-  const handleStart = async () => {
-    if (!fixture) return;
-    if (!startGate.ok) {
-      setStartError(startGate.reason);
-      return;
-    }
-    const ok = await CONFIRM.startMatch(`${fixture.teamAName} vs ${fixture.teamBName}`);
-    if (!ok) return;
+  const handleStartSecondInnings = async (openers: {
+    strikerId: string;
+    nonStrikerId: string;
+    bowlerId: string;
+  }) => {
+    if (!match || !secondInningsPending) return;
     setBusy(true);
-    setStartError(null);
     try {
-      const result = await initializeLiveMatch(fixture);
-      setBootstrappedMatch(result.match);
-      setBootstrappedInnings(result.innings);
-      setStarted(true);
+      await startSecondInnings(
+        { ...match, target: secondInningsPending.target },
+        secondInningsPending.firstInnings,
+        openers
+      );
+      setSecondInningsPending(null);
       live.refresh();
     } catch (error) {
-      setStarted(false);
-      setStartError(formatLiveStartError(error));
+      setParticipantError(formatLiveStartError(error));
     } finally {
       setBusy(false);
     }
@@ -501,11 +505,10 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         if (result.firstInningsComplete) {
           const proceed = await CONFIRM.endInnings(1);
           if (proceed) {
-            await startSecondInnings(
-              { ...match, target: result.innings.runs + 1 },
-              result.innings
-            );
-            live.refresh();
+            setSecondInningsPending({
+              firstInnings: result.innings,
+              target: result.innings.runs + 1,
+            });
           }
         }
 
@@ -603,13 +606,17 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
         {live.error && !startError && (
           <p className="text-red-500 text-sm whitespace-pre-wrap">{live.error}</p>
         )}
-        <button
-          onClick={handleStart}
-          disabled={busy || profile?.role === "viewer" || !startGate.ok}
-          className="px-8 py-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
+        <Link
+          href={`/admin/matches/${matchId}/setup`}
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
         >
-          {busy ? "Starting…" : "Start Match & Open Scorer"}
-        </button>
+          <ClipboardList className="w-5 h-5" />
+          Open Match Setup Wizard
+        </Link>
+        <p className="text-xs text-slate-500 max-w-md mx-auto">
+          Complete toss, playing XI, and openers before live scoring. Batting and bowling teams
+          are derived automatically from the toss.
+        </p>
       </div>
     );
   }
@@ -692,6 +699,16 @@ export function AdminLiveScorer({ matchId }: AdminLiveScorerProps) {
 
   return (
     <div className="space-y-4 pb-32">
+      {match && secondInningsPending && (
+        <SecondInningsSetupSheet
+          open
+          match={match}
+          target={secondInningsPending.target}
+          onConfirm={handleStartSecondInnings}
+          onCancel={() => setSecondInningsPending(null)}
+          busy={busy}
+        />
+      )}
       {recoveryNotice && (
         <p className="text-sm text-amber-400 glass-card p-3">{recoveryNotice}</p>
       )}

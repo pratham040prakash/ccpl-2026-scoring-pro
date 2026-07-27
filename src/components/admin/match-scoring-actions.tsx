@@ -3,39 +3,34 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PenLine, Play, Radio, Smartphone, Tv } from "lucide-react";
+import { ClipboardList, PenLine, Radio, Smartphone, Tv } from "lucide-react";
 import type { Fixture } from "@/types";
 import { useLiveMatch } from "@/hooks/use-live-match";
 import { useAuth } from "@/providers/auth-provider";
-import { initializeLiveMatch } from "@/lib/engine/live-scoring-service";
-import { canStartLiveScoring, formatLiveStartError } from "@/lib/live/match-start";
+import { canStartLiveScoring } from "@/lib/live/match-start";
+import { isMatchSetupComplete } from "@/lib/live/match-setup";
 import { cn } from "@/lib/utils";
 
 type Props = {
   fixture: Fixture;
-  /** Navigate to the admin scorer after a successful start. */
-  openScorerAfterStart?: boolean;
   compact?: boolean;
 };
 
 export function MatchScoringActions({
   fixture,
-  openScorerAfterStart = true,
   compact = false,
 }: Props) {
   const router = useRouter();
   const { user, profile, retryAdminBootstrap } = useAuth();
   const live = useLiveMatch(fixture.id);
-  const [busy, setBusy] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [startedLocally, setStartedLocally] = useState(false);
   const [retryingRole, setRetryingRole] = useState(false);
   const [roleFixMessage, setRoleFixMessage] = useState<string | null>(null);
 
   const isLive =
     live.isLive ||
     live.innings.length > 0 ||
-    startedLocally ||
+    isMatchSetupComplete(live.match) ||
     fixture.status === "live";
   const startGate = canStartLiveScoring(fixture);
   const canScore = profile?.role === "administrator" || profile?.role === "scorer";
@@ -53,25 +48,12 @@ export function MatchScoringActions({
     setRetryingRole(false);
   };
 
-  const handleStart = async () => {
+  const handleStart = () => {
     if (!startGate.ok) {
       setStartError(startGate.reason);
       return;
     }
-    setBusy(true);
-    setStartError(null);
-    try {
-      await initializeLiveMatch(fixture);
-      setStartedLocally(true);
-      live.refresh();
-      if (openScorerAfterStart) {
-        router.push(`/admin/matches/${fixture.id}/score`);
-      }
-    } catch (error) {
-      setStartError(formatLiveStartError(error));
-    } finally {
-      setBusy(false);
-    }
+    router.push(`/admin/matches/${fixture.id}/setup`);
   };
 
   const actionClass = compact
@@ -161,17 +143,18 @@ export function MatchScoringActions({
           <button
             type="button"
             onClick={handleStart}
-            disabled={busy || !canScore || !startGate.ok}
+            disabled={!canScore || !startGate.ok}
             className={cn(
               actionClass,
               "bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50 w-full sm:w-auto"
             )}
           >
-            <Play className="w-4 h-4" />
-            {busy ? "Starting…" : "Start Match & Open Scorer"}
+            <ClipboardList className="w-4 h-4" />
+            Match Setup Wizard
           </button>
           <p className="text-xs text-slate-500">
-            Starts the match in Firestore, then opens the live scoring panel.
+            Toss, playing XI, and openers — batting/bowling teams are set automatically from the
+            toss.
           </p>
         </div>
       )}

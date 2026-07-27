@@ -9,7 +9,6 @@ import { useAuth } from "@/providers/auth-provider";
 import { formatOvers } from "@/lib/utils";
 import {
   applyScoringAction,
-  initializeLiveMatch,
   undoLastBall,
   type ScoringContext,
 } from "@/lib/engine/live-scoring-service";
@@ -42,7 +41,6 @@ export default function MobileScorerPage({
   const { fixture, match, currentInnings, balls: liveBalls } = live;
   const [offline, setOffline] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
   const [bootstrappedInnings, setBootstrappedInnings] = useState<Innings | null>(null);
   const [pendingBalls, setPendingBalls] = useState<Ball[]>([]);
@@ -78,21 +76,6 @@ export default function MobileScorerPage({
       window.removeEventListener("offline", check);
     };
   }, [matchId, user, fixture]);
-
-  const handleStart = async () => {
-    if (!fixture) return;
-    setBusy(true);
-    setStartError(null);
-    try {
-      const result = await initializeLiveMatch(fixture);
-      setBootstrappedInnings(result.innings);
-      live.refresh();
-    } catch (error) {
-      setStartError(formatLiveStartError(error));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const getContext = useCallback((): ScoringContext | null => {
     if (!activeInnings?.strikerId || !activeInnings.nonStrikerId || !activeInnings.bowlerId) {
@@ -203,18 +186,17 @@ export default function MobileScorerPage({
         <p className="text-slate-400">
           {fixture.teamAName} vs {fixture.teamBName}
         </p>
-        {startError && <p className="text-red-400 text-sm whitespace-pre-wrap">{startError}</p>}
         {profile?.role === "viewer" && (
           <p className="text-amber-400 text-sm">Viewer access — cannot start matches.</p>
         )}
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={busy || !canScore}
-          className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
-        >
-          {busy ? "Starting…" : "Start Match"}
-        </button>
+        {canScore && (
+          <Link
+            href={`/admin/matches/${fixture.id}/setup`}
+            className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold"
+          >
+            Match Setup Wizard
+          </Link>
+        )}
         <Link href={`/admin/matches/${fixture.id}/score`} className="text-accent text-sm">
           Or open Admin Live Scorer
         </Link>
