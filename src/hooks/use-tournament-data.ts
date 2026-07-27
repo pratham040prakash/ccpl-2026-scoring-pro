@@ -173,6 +173,16 @@ export function usePointsTable() {
       const candidates: PointsTableEntry[][] = [localTable];
 
       try {
+        const staticRes = await fetch("/data/day1-standings.json", { cache: "no-store" });
+        if (staticRes.ok) {
+          const payload = (await staticRes.json()) as { table?: PointsTableEntry[] };
+          if (payload.table?.length) candidates.unshift(payload.table);
+        }
+      } catch {
+        /* static fallback optional */
+      }
+
+      try {
         const res = await fetch("/api/standings", { cache: "no-store" });
         if (res.ok) {
           const payload = (await res.json()) as { table?: PointsTableEntry[] };

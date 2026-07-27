@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:3001": "next dev -H 127.0.0.1 -p 3001",
-    "build": "next build",
+    "build": "npm run generate:standings && next build",
+    "generate:standings": "npx tsx scripts/generate-standings-json.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
