@@ -12,7 +12,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import type { Fixture, PointsTableEntry } from "@/types";
 import type { ScoreImportRow, StoredMatchScore } from "@/types/scores";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { DEMO_DATA } from "@/lib/seed";
+import {
+  fetchCompletedScoresFromFirestore,
+  mergeScoreLayers,
+} from "@/lib/scores/firestore-scores";
 import {
   getOfficialDay1Scores,
   mergeWithOfficialScores,
@@ -25,6 +30,7 @@ import {
   loadStoredScores,
   mergeFixturesWithScores,
 } from "@/lib/scores/store";
+import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
 
 interface MatchResultsContextValue {
   scores: Record<string, StoredMatchScore>;
@@ -43,9 +49,47 @@ export function MatchResultsProvider({ children }: { children: ReactNode }) {
   );
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    setScores(mergeWithOfficialScores(loadStoredScores()));
+  const reloadScores = useCallback(async () => {
+    const local = mergeWithOfficialScores(loadStoredScores());
+    if (!isFirebaseConfigured()) {
+      setScores(local);
+      return;
+    }
+
+    try {
+      const remote = await fetchCompletedScoresFromFirestore();
+      setScores(mergeScoreLayers(local, remote));
+    } catch {
+      setScores(local);
+    }
   }, []);
+
+  useEffect(() => {
+    void reloadScores();
+  }, [reloadScores]);
+
+  useEffect(() => {
+    const refresh = () => {
+      void reloadScores();
+      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
+      queryClient.invalidateQueries({ queryKey: ["pointsTable"] });
+    };
+
+    window.addEventListener("ccpl-scores-reload", refresh);
+    window.addEventListener("ccpl-standings-updated", refresh);
+    return () => {
+      window.removeEventListener("ccpl-scores-reload", refresh);
+      window.removeEventListener("ccpl-standings-updated", refresh);
+    };
+  }, [queryClient, reloadScores]);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    const timer = window.setInterval(() => {
+      void reloadScores();
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [reloadScores]);
 
   const persist = useCallback(
     (next: Record<string, StoredMatchScore>) => {
@@ -113,7 +157,7 @@ export function MatchResultsProvider({ children }: { children: ReactNode }) {
   const getPointsTable = useCallback(
     (teams = DEMO_DATA.teams) => {
       const merged = mergeFixturesWithScores(DEMO_DATA.fixtures, scores);
-      const table = buildPointsTableFromScores(teams, merged, scores);
+      const table = buildFairPointsTableFromScores(teams, merged, scores);
       if (table.length === 0) {
         return teams.map((t, i) => ({
           teamId: t.id,

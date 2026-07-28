@@ -533,6 +533,10 @@ export async function manualFinalizeMatch(
   if (!user?.idToken) {
     throw new Error("Sign in again to finalize the match and update standings.");
   }
+
+  const allInnings = await getInnings(match.id);
+  syncLiveResultToLocalStorage(match, allInnings);
+
   const fin = await finalizeMatchViaApi(matchId, user.idToken);
   logScoring("finalize", fin.success ? "Manual finalize succeeded" : "Manual finalize failed", {
     matchId,
@@ -541,8 +545,6 @@ export async function manualFinalizeMatch(
   if (!fin.success) {
     throw new Error(fin.message ?? "Failed to finalize match.");
   }
-  const allInnings = await getInnings(match.id);
-  syncLiveResultToLocalStorage(match, allInnings);
   return { summary: fin.summary };
 }
 

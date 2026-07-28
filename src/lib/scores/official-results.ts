@@ -1,5 +1,8 @@
 import { DAY1_MATCH_RESULTS_CSV } from "@/data/day1-2026-07-27-match-results";
+import { FULL_MATCH_RESULTS_CSV } from "@/data/ccpl-2026-full-match-results";
+import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
 import { buildSeedData } from "@/lib/seed";
+import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
 import type { PointsTableEntry } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
 import {
@@ -10,13 +13,12 @@ import {
 } from "@/lib/scores/store";
 
 let day1Cache: Record<string, StoredMatchScore> | null = null;
+let allOfficialCache: Record<string, StoredMatchScore> | null = null;
 
-/** Official Day 1 (2026-07-27) Round 1 results from src/data/day1-2026-07-27-match-results.csv */
-export function getOfficialDay1Scores(): Record<string, StoredMatchScore> {
-  if (day1Cache) return day1Cache;
-
+function scoresFromCsv(csvText: string): Record<string, StoredMatchScore> {
   const seed = buildSeedData();
-  const rows = parseScoreCsv(DAY1_MATCH_RESULTS_CSV, seed.fixtures);
+  const fixtures = applyConfirmedRound2Fixtures(seed.fixtures);
+  const rows = parseScoreCsv(csvText, fixtures);
   const scores: Record<string, StoredMatchScore> = {};
 
   for (const row of rows) {
@@ -28,20 +30,39 @@ export function getOfficialDay1Scores(): Record<string, StoredMatchScore> {
     scores[fixture.id] = buildStoredScore(fixture, row, seed.teams, "csv");
   }
 
-  day1Cache = scores;
   return scores;
+}
+
+/** Official Day 1 (2026-07-27) Round 1 results only. */
+export function getOfficialDay1Scores(): Record<string, StoredMatchScore> {
+  if (day1Cache) return day1Cache;
+  day1Cache = scoresFromCsv(DAY1_MATCH_RESULTS_CSV);
+  return day1Cache;
+}
+
+/** All published R1 + R2 results bundled with the app. */
+export function getAllOfficialScores(): Record<string, StoredMatchScore> {
+  if (allOfficialCache) return allOfficialCache;
+  allOfficialCache = scoresFromCsv(FULL_MATCH_RESULTS_CSV);
+  return allOfficialCache;
 }
 
 export function mergeWithOfficialScores(
   stored: Record<string, StoredMatchScore>
 ): Record<string, StoredMatchScore> {
-  return { ...getOfficialDay1Scores(), ...stored };
+  return { ...getAllOfficialScores(), ...stored };
 }
 
-/** Client-safe Day 1 points table — always available without API or localStorage. */
+/** Round 1 only — used in legacy tests and Day 1 exports. */
 export function getBundledOfficialPointsTable(): PointsTableEntry[] {
   const seed = buildSeedData();
   return buildPointsTableFromScores(seed.teams, seed.fixtures, getOfficialDay1Scores());
+}
+
+/** Fair league table (R1 stats + R2 placement for 7th/8th) bundled offline. */
+export function getBundledFairPointsTable(): PointsTableEntry[] {
+  const seed = buildSeedData();
+  return buildFairPointsTableFromScores(seed.teams, seed.fixtures, getAllOfficialScores());
 }
 
 export function officialStandingsPlayedCount(table: PointsTableEntry[]): number {
@@ -50,7 +71,7 @@ export function officialStandingsPlayedCount(table: PointsTableEntry[]): number 
 
 export function saveUserScoresOnly(all: Record<string, StoredMatchScore>): void {
   if (typeof window === "undefined") return;
-  const official = getOfficialDay1Scores();
+  const official = getAllOfficialScores();
   const userOnly: Record<string, StoredMatchScore> = {};
   for (const [id, score] of Object.entries(all)) {
     const base = official[id];

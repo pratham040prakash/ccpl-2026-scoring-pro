@@ -13,7 +13,8 @@ import {
 import { calculateLeaderboards } from "@/lib/engine/statistics";
 import { buildSeedData } from "@/lib/seed";
 import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
-import { buildMatchesFromScores } from "@/lib/scores/fixture-resolution";
+import { applyConfirmedQuarterFinalFixtures } from "@/data/quarter-final-assignments";
+import { buildMatchesFromScores } from "@/lib/scores/matches-from-scores";
 import { buildUnifiedStandingsFromFirestore, syncUnifiedStandingsToFirestore } from "@/lib/server/standings-publish";
 import type { Firestore } from "firebase-admin/firestore";
 
@@ -144,10 +145,12 @@ export async function syncKnockoutFixturesToFirestore(
   }
   const matches = Array.from(matchByFixture.values());
 
-  const resolved = applyQuarterFinalSeeding(
-    applyConfirmedRound2Fixtures(resolveKnockoutTeams(fixtures, matches, table, teams)),
-    table,
-    teams
+  const resolved = applyConfirmedQuarterFinalFixtures(
+    applyQuarterFinalSeeding(
+      applyConfirmedRound2Fixtures(resolveKnockoutTeams(fixtures, matches, table, teams)),
+      table,
+      teams
+    )
   );
   const now = new Date().toISOString();
   const batch = db.batch();

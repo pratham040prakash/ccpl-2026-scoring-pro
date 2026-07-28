@@ -23,8 +23,8 @@ const STAGE_ORDER: MatchStage[] = [
   "final",
 ];
 
-/** League matches that count toward the points table (top 8 qualify for QF). */
-export const LEAGUE_STAGES: MatchStage[] = ["round_1", "integration"];
+/** League matches that count toward the points table (Round 1 only). */
+export const LEAGUE_STAGES: MatchStage[] = ["round_1"];
 
 export const QUALIFYING_TEAM_COUNT = 8;
 

@@ -3,7 +3,8 @@ import type { Fixture, PointsTableEntry } from "@/types";
 import { ROUND_2_CONFIRMED } from "@/data/round2-assignments";
 import { mergeWithOfficialScores } from "@/lib/scores/official-results";
 import { resolveFixturesWithScores } from "@/lib/scores/fixture-resolution";
-import { buildPointsTableFromScores, loadStoredScores, mergeFixturesWithScores } from "@/lib/scores/store";
+import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
+import { loadStoredScores, mergeFixturesWithScores } from "@/lib/scores/store";
 import { DEMO_DATA } from "@/lib/seed";
 import { getFirebaseDb, isFirebaseConfigured } from "./config";
 import { sanitizeForFirestore } from "./sanitize";
@@ -24,7 +25,7 @@ export async function publishDay1StandingsClient(): Promise<{
 
   const db = getFirebaseDb();
   const scores = mergeWithOfficialScores(loadStoredScores());
-  const table = buildPointsTableFromScores(DEMO_DATA.teams, DEMO_DATA.fixtures, scores);
+  const table = buildFairPointsTableFromScores(DEMO_DATA.teams, DEMO_DATA.fixtures, scores);
   const mergedFixtures = mergeFixturesWithScores(DEMO_DATA.fixtures, scores);
   const now = new Date().toISOString();
 

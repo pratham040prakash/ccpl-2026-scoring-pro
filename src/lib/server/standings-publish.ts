@@ -3,7 +3,8 @@ import type { Fixture, Innings, Match, PointsTableEntry } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
 import { buildStoredScoreFromLive } from "@/lib/engine/match-finalization";
 import { buildSeedData } from "@/lib/seed";
-import { getOfficialDay1Scores } from "@/lib/scores/official-results";
+import { getOfficialDay1Scores, getAllOfficialScores } from "@/lib/scores/official-results";
+import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
 import {
   buildPointsTableFromScores,
   mergeFixturesWithScores,
@@ -49,7 +50,7 @@ export async function buildUnifiedStandingsFromFirestore(
 }> {
   const seed = buildSeedData();
   const mergedScores: Record<string, StoredMatchScore> = {
-    ...getOfficialDay1Scores(),
+    ...getAllOfficialScores(),
   };
 
   const matchesSnap = await db.collection("matches").get();
@@ -74,7 +75,7 @@ export async function buildUnifiedStandingsFromFirestore(
     if (stored.source === "live") liveMatchCount += 1;
   }
 
-  const table = buildPointsTableFromScores(
+  const table = buildFairPointsTableFromScores(
     seed.teams,
     seed.fixtures,
     mergedScores

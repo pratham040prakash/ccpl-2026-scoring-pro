@@ -193,10 +193,14 @@ export function buildStoredScore(
 
   if (margin.toLowerCase().includes("wicket")) marginType = "wickets";
 
+  const winnerFromName = teams.find(
+    (team) => team.name.toLowerCase() === winnerName.toLowerCase()
+  );
   const winnerId =
-    winnerName.toLowerCase() === fixture.teamAName.toLowerCase()
+    winnerFromName?.id ??
+    (winnerName.toLowerCase() === fixture.teamAName.toLowerCase()
       ? fixture.teamAId || findTeamId(fixture.teamAName, teams)
-      : fixture.teamBId || findTeamId(fixture.teamBName, teams);
+      : fixture.teamBId || findTeamId(fixture.teamBName, teams));
 
   return {
     fixtureId: fixture.id,

@@ -14,6 +14,7 @@ import {
 } from "@/lib/firebase/firestore";
 import { DEMO_DATA } from "@/lib/seed";
 import {
+  getBundledFairPointsTable,
   getBundledOfficialPointsTable,
   officialStandingsPlayedCount,
 } from "@/lib/scores/official-results";
@@ -176,17 +177,32 @@ export function usePointsTable() {
   useEffect(() => {
     const refresh = () => {
       queryClient.invalidateQueries({ queryKey: ["pointsTable"] });
+      queryClient.invalidateQueries({ queryKey: ["fixtures"] });
     };
     window.addEventListener("ccpl-standings-updated", refresh);
-    return () => window.removeEventListener("ccpl-standings-updated", refresh);
+    window.addEventListener("ccpl-scores-reload", refresh);
+    return () => {
+      window.removeEventListener("ccpl-standings-updated", refresh);
+      window.removeEventListener("ccpl-scores-reload", refresh);
+    };
   }, [queryClient]);
 
   const query = useQuery({
     queryKey: ["pointsTable", scoreKey],
-    initialData: getBundledOfficialPointsTable,
+    initialData: getBundledFairPointsTable,
     queryFn: async () => {
       const localTable = getPointsTable();
       const candidates: PointsTableEntry[][] = [localTable];
+
+      try {
+        const staticRes = await fetch("/data/standings.json", { cache: "no-store" });
+        if (staticRes.ok) {
+          const payload = (await staticRes.json()) as { table?: PointsTableEntry[] };
+          if (payload.table?.length) candidates.unshift(payload.table);
+        }
+      } catch {
+        /* bundled fair standings optional */
+      }
 
       try {
         const staticRes = await fetch("/data/day1-standings.json", { cache: "no-store" });

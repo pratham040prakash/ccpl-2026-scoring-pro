@@ -3,6 +3,12 @@ import { loadStoredScores, saveStoredScores } from "@/lib/scores/store";
 import type { Innings, Match } from "@/types";
 import { buildStoredScoreFromLive } from "@/lib/engine/match-finalization";
 
+export function notifyScoresUpdated(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("ccpl-scores-reload"));
+  window.dispatchEvent(new Event("ccpl-standings-updated"));
+}
+
 export function syncLiveResultToLocalStorage(
   match: Match,
   inningsList: Innings[]
@@ -13,6 +19,7 @@ export function syncLiveResultToLocalStorage(
   const all = loadStoredScores();
   all[match.fixtureId] = stored;
   saveStoredScores(all);
+  notifyScoresUpdated();
   return stored;
 }
 
@@ -38,8 +45,8 @@ export async function finalizeMatchViaApi(
     return { success: false, message: data.message ?? "Finalize failed" };
   }
 
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("ccpl-standings-updated"));
+  if (data.success) {
+    notifyScoresUpdated();
   }
 
   return data;

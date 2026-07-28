@@ -162,11 +162,12 @@ export function buildSeedData(): {
     venue: "Cisco Cricket Ground, Bengaluru",
     venueMapUrl: "https://maps.app.goo.gl/BaCMbG6re36ChLsi6",
     rules: [
-      "Mon 27 · Tue 28: Round 1 (9 matches) + Round 2 (2 matches) · 6 overs per side",
-      "Round 2: R1-9 winner vs best Round 1 loser (highest NRR); R1-8 winner vs R1-7 winner",
+      "Mon 27 · Tue 28: Round 1 (9 matches) + Round 2 (2 placement matches) · 6 overs per side",
+      "Round 2: placement only for 7th & 8th QF spots — no extra league points",
+      "R2-1: Data Warriors vs 11 Daulath's · R2-2: Play Bold XI vs Lifecycle Cricket Team",
       "Wed 29: Quarter-Finals · Seeds 1v8, 2v7, 3v6, 4v5 · 8 overs per side",
       "Thu 30: Semi-Finals (10 overs) + Final at 1:30 PM (10 overs)",
-      "Standings: Points → NRR → Runs Scored · Top 8 qualify for knockouts",
+      "Standings: Round 1 points & NRR, then R2 decides ranks 7–8 · Top 8 qualify for knockouts",
       "Powerplay: First 2 overs · Points: Win = 2, Tie/NR = 1, Loss = 0",
     ],
     officials: [
