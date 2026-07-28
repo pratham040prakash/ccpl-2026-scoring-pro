@@ -36,7 +36,8 @@ export function ScoreUpdatePanel() {
         <Upload className="w-5 h-5 text-primary" /> Score Updates
       </h2>
       <p className="text-sm text-slate-500 mb-6">
-        Import scores from CSV or a scorecard photo, or enter results manually. Standings update automatically.
+        Import scores from CSV or a scorecard photo, or enter results manually. Updates this device
+        immediately; use Publish to Firestore so all users and mobile see the same table.
       </p>
 
       <div className="flex gap-2 flex-wrap mb-6">

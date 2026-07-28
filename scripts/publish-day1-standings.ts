@@ -1,5 +1,5 @@
 /**
- * Publish Day 1 standings to Firestore (fixes mobile + all users on current production).
+ * Publish fair standings + fixtures to Firestore (all users, mobile + desktop).
  *
  * Usage:
  *   cp .env.example .env.local   # add FIREBASE_SERVICE_ACCOUNT_JSON
@@ -8,7 +8,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "../src/lib/firebase/admin";
-import { publishOfficialStandingsToFirestore } from "../src/lib/server/standings-publish";
+import {
+  buildOfficialStandings,
+  publishOfficialStandingsToFirestore,
+  syncUnifiedStandingsToFirestore,
+} from "../src/lib/server/standings-publish";
+import { syncKnockoutFixturesToFirestore } from "../src/lib/server/tournament-sync";
 
 function loadEnvLocal(): void {
   const envPath = resolve(process.cwd(), ".env.local");
@@ -44,11 +49,19 @@ async function main() {
     process.exit(1);
   }
 
-  const result = await publishOfficialStandingsToFirestore(db);
+  const bundled = await publishOfficialStandingsToFirestore(db);
+  const unified = await syncUnifiedStandingsToFirestore(db);
+  const knockouts = await syncKnockoutFixturesToFirestore(db);
+  const { scores } = buildOfficialStandings();
+
   console.log(
-    `Done: ${result.matchesPublished} matches, ${result.table.length} teams in pointsTable.`
+    `Done: ${Object.keys(scores).length} bundled matches, ${bundled.matchesPublished} fixtures marked completed.`
   );
-  console.log(`#1: ${result.table[0]?.teamName} (${result.table[0]?.points} pts)`);
+  console.log(`Unified table: ${unified.table.length} teams (${unified.liveMatchCount} live merges).`);
+  console.log(
+    `Knockouts: R2=${knockouts.round2}, QF=${knockouts.quarterFinals}, fixtures updated=${knockouts.updated}.`
+  );
+  console.log(`#1: ${unified.table[0]?.teamName} · #7: ${unified.table.find((e) => e.rank === 7)?.teamName} · #8: ${unified.table.find((e) => e.rank === 8)?.teamName}`);
 }
 
 main().catch((error) => {

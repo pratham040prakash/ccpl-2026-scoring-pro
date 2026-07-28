@@ -1,4 +1,4 @@
-const CACHE_NAME = "ccpl-scoring-pro-v3";
+const CACHE_NAME = "ccpl-scoring-pro-v4";
 const STATIC_ASSETS = ["/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -23,9 +23,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache API or navigations — avoids stale standings on mobile PWA.
+  // Never cache API, tournament data, or navigations — keeps standings/scores fresh on mobile PWA.
   if (
     url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/data/") ||
     event.request.mode === "navigate" ||
     event.request.destination === "document"
   ) {

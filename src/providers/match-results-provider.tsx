@@ -16,6 +16,7 @@ import { isFirebaseConfigured } from "@/lib/firebase/config";
 import { DEMO_DATA } from "@/lib/seed";
 import {
   fetchCompletedScoresFromFirestore,
+  fetchStaticScores,
   mergeScoreLayers,
 } from "@/lib/scores/firestore-scores";
 import {
@@ -51,16 +52,19 @@ export function MatchResultsProvider({ children }: { children: ReactNode }) {
 
   const reloadScores = useCallback(async () => {
     const local = mergeWithOfficialScores(loadStoredScores());
+    const staticScores = await fetchStaticScores();
+    const withStatic = mergeScoreLayers(local, staticScores);
+
     if (!isFirebaseConfigured()) {
-      setScores(local);
+      setScores(withStatic);
       return;
     }
 
     try {
       const remote = await fetchCompletedScoresFromFirestore();
-      setScores(mergeScoreLayers(local, remote));
+      setScores(mergeScoreLayers(withStatic, remote));
     } catch {
-      setScores(local);
+      setScores(withStatic);
     }
   }, []);
 

@@ -27,7 +27,7 @@ export async function fetchCompletedScoresFromFirestore(): Promise<
   if (!isFirebaseConfigured()) return {};
 
   const seed = buildSeedData();
-  const matches = await getMatches("completed");
+  const matches = await getMatches();
   const eligible = matches.filter(isStandingsEligibleMatch);
   const scores: Record<string, StoredMatchScore> = {};
 
@@ -69,4 +69,16 @@ export function mergeScoreLayers(
   }
 
   return merged;
+}
+
+export async function fetchStaticScores(): Promise<Record<string, StoredMatchScore>> {
+  if (typeof window === "undefined") return {};
+  try {
+    const res = await fetch("/data/scores.json", { cache: "no-store" });
+    if (!res.ok) return {};
+    const payload = (await res.json()) as { scores?: Record<string, StoredMatchScore> };
+    return payload.scores ?? {};
+  } catch {
+    return {};
+  }
 }

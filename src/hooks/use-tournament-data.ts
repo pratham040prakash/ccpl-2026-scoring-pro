@@ -15,11 +15,10 @@ import {
 import { DEMO_DATA } from "@/lib/seed";
 import {
   getBundledFairPointsTable,
-  getBundledOfficialPointsTable,
   officialStandingsPlayedCount,
 } from "@/lib/scores/official-results";
 import { useMatchResults } from "@/providers/match-results-provider";
-import type { Player, PointsTableEntry } from "@/types";
+import type { Fixture, Player, PointsTableEntry } from "@/types";
 
 function tableUpdatedAt(table: PointsTableEntry[]): number {
   return Math.max(
@@ -32,13 +31,14 @@ function tableUpdatedAt(table: PointsTableEntry[]): number {
   );
 }
 
+/** Prefer fresher tables; never regress below bundled fair standings. */
 function pickBestPointsTable(
   candidates: PointsTableEntry[][]
 ): PointsTableEntry[] {
-  const bundled = getBundledOfficialPointsTable();
+  const bundled = getBundledFairPointsTable();
   let best = bundled;
   let bestPlayed = officialStandingsPlayedCount(best);
-  let bestUpdated = 0;
+  let bestUpdated = tableUpdatedAt(best);
 
   for (const table of candidates) {
     if (!table.length) continue;
@@ -52,6 +52,28 @@ function pickBestPointsTable(
   }
 
   return best;
+}
+
+async function fetchStaticStandings(): Promise<PointsTableEntry[] | null> {
+  try {
+    const staticRes = await fetch("/data/standings.json", { cache: "no-store" });
+    if (!staticRes.ok) return null;
+    const payload = (await staticRes.json()) as { table?: PointsTableEntry[] };
+    return payload.table?.length ? payload.table : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchStaticFixtures(): Promise<Fixture[] | null> {
+  try {
+    const staticRes = await fetch("/data/fixtures.json", { cache: "no-store" });
+    if (!staticRes.ok) return null;
+    const payload = (await staticRes.json()) as { fixtures?: Fixture[] };
+    return payload.fixtures?.length ? payload.fixtures : null;
+  } catch {
+    return null;
+  }
 }
 
 function orderPlayers(players: Player[], playerIds?: string[]): Player[] {
@@ -145,6 +167,11 @@ export function useFixtures() {
   return useQuery({
     queryKey: ["fixtures", scoreKey],
     queryFn: async () => {
+      const staticFixtures = await fetchStaticFixtures();
+      if (staticFixtures) {
+        return getMergedFixtures(staticFixtures);
+      }
+
       let base = DEMO_DATA.fixtures;
       if (isFirebaseConfigured()) {
         try {
@@ -191,47 +218,31 @@ export function usePointsTable() {
     queryKey: ["pointsTable", scoreKey],
     initialData: getBundledFairPointsTable,
     queryFn: async () => {
-      const localTable = getPointsTable();
-      const candidates: PointsTableEntry[][] = [localTable];
-
-      try {
-        const staticRes = await fetch("/data/standings.json", { cache: "no-store" });
-        if (staticRes.ok) {
-          const payload = (await staticRes.json()) as { table?: PointsTableEntry[] };
-          if (payload.table?.length) candidates.unshift(payload.table);
-        }
-      } catch {
-        /* bundled fair standings optional */
-      }
-
-      try {
-        const staticRes = await fetch("/data/day1-standings.json", { cache: "no-store" });
-        if (staticRes.ok) {
-          const payload = (await staticRes.json()) as { table?: PointsTableEntry[] };
-          if (payload.table?.length) candidates.unshift(payload.table);
-        }
-      } catch {
-        /* static fallback optional */
-      }
+      const candidates: PointsTableEntry[][] = [];
 
       try {
         const res = await fetch("/api/standings", { cache: "no-store" });
         if (res.ok) {
           const payload = (await res.json()) as { table?: PointsTableEntry[] };
-          if (payload.table?.length) candidates.unshift(payload.table);
+          if (payload.table?.length) candidates.push(payload.table);
         }
       } catch {
         /* optional server sync */
       }
 
+      const staticTable = await fetchStaticStandings();
+      if (staticTable) candidates.push(staticTable);
+
       if (isFirebaseConfigured()) {
         try {
           const table = await fetchPointsTableFromFirestore();
-          if (table.length) candidates.unshift(table);
+          if (table.length) candidates.push(table);
         } catch {
           /* fall through */
         }
       }
+
+      candidates.push(getPointsTable());
 
       return pickBestPointsTable(candidates);
     },

@@ -3,12 +3,10 @@ import type { Fixture, Innings, Match, PointsTableEntry } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
 import { buildStoredScoreFromLive } from "@/lib/engine/match-finalization";
 import { buildSeedData } from "@/lib/seed";
-import { getOfficialDay1Scores, getAllOfficialScores } from "@/lib/scores/official-results";
+import { getAllOfficialScores } from "@/lib/scores/official-results";
 import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
-import {
-  buildPointsTableFromScores,
-  mergeFixturesWithScores,
-} from "@/lib/scores/store";
+import { resolveFixturesWithScores } from "@/lib/scores/fixture-resolution";
+import { mergeFixturesWithScores } from "@/lib/scores/store";
 
 function isStandingsEligibleMatch(match: Match): boolean {
   if (match.status === "completed") return true;
@@ -27,13 +25,14 @@ function resolveFixtureKey(match: Match, fixtures: Fixture[]): string {
 
 export function buildOfficialStandings(): {
   table: PointsTableEntry[];
-  scores: ReturnType<typeof getOfficialDay1Scores>;
+  scores: ReturnType<typeof getAllOfficialScores>;
   fixtures: Fixture[];
 } {
   const seed = buildSeedData();
-  const scores = getOfficialDay1Scores();
-  const table = buildPointsTableFromScores(seed.teams, seed.fixtures, scores);
-  return { table, scores, fixtures: seed.fixtures };
+  const scores = getAllOfficialScores();
+  const fixtures = resolveFixturesWithScores(seed.fixtures, scores, seed.teams);
+  const table = buildFairPointsTableFromScores(seed.teams, fixtures, scores);
+  return { table, scores, fixtures };
 }
 
 export function standingsPlayedCount(table: PointsTableEntry[]): number {
@@ -108,7 +107,7 @@ export async function syncUnifiedStandingsToFirestore(
   return { table, liveMatchCount };
 }
 
-/** Write official Day 1 standings + completed fixtures to Firestore (shared for all users). */
+/** Write bundled fair standings + completed fixtures to Firestore (shared for all users). */
 export async function publishOfficialStandingsToFirestore(
   db: Firestore
 ): Promise<{ table: PointsTableEntry[]; matchesPublished: number }> {
