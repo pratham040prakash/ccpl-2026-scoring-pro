@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Upload } from "lucide-react";
-import { publishDay1StandingsClient, publishRound2FixturesClient } from "@/lib/firebase/publish-standings-client";
+import { publishDay1StandingsClient, publishQuarterFinalFixturesClient, publishRound2FixturesClient } from "@/lib/firebase/publish-standings-client";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 
 export function PublishStandingsButton() {
@@ -14,10 +14,10 @@ export function PublishStandingsButton() {
   return (
     <div className="glass-card p-4 border border-emerald-500/30 space-y-3">
       <div>
-        <h3 className="font-bold text-emerald-400">Publish standings & Round 2 fixtures</h3>
+        <h3 className="font-bold text-emerald-400">Publish standings & knockout fixtures</h3>
         <p className="text-sm text-slate-400 mt-1">
-          Writes standings and confirmed Round 2 pairings to Firestore so all devices show the same
-          points table and fixtures.
+          Writes the full points table plus Round 2 and quarter-final pairings (top 8) to Firestore
+          for all devices.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -30,8 +30,9 @@ export function PublishStandingsButton() {
           try {
             const result = await publishDay1StandingsClient();
             const round2 = await publishRound2FixturesClient();
+            const quarterFinals = await publishQuarterFinalFixturesClient();
             setMessage(
-              `Published ${result.teams} teams, ${result.fixtures} R1 results, and ${round2} Round 2 fixtures. Ask everyone to refresh.`
+              `Published ${result.teams} teams, ${result.fixtures} R1 results, ${round2} Round 2 fixtures, and ${quarterFinals} quarter-finals (top 8). Ask everyone to refresh.`
             );
           } catch (error) {
             setMessage(error instanceof Error ? error.message : String(error));

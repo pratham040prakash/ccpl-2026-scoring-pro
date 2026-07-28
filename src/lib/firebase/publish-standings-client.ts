@@ -1,8 +1,9 @@
 import { doc, setDoc } from "firebase/firestore";
 import type { Fixture, PointsTableEntry } from "@/types";
 import { ROUND_2_CONFIRMED } from "@/data/round2-assignments";
-import { getOfficialDay1Scores, getBundledOfficialPointsTable } from "@/lib/scores/official-results";
-import { mergeFixturesWithScores } from "@/lib/scores/store";
+import { mergeWithOfficialScores } from "@/lib/scores/official-results";
+import { resolveFixturesWithScores } from "@/lib/scores/fixture-resolution";
+import { buildPointsTableFromScores, loadStoredScores, mergeFixturesWithScores } from "@/lib/scores/store";
 import { DEMO_DATA } from "@/lib/seed";
 import { getFirebaseDb, isFirebaseConfigured } from "./config";
 import { sanitizeForFirestore } from "./sanitize";
@@ -22,8 +23,8 @@ export async function publishDay1StandingsClient(): Promise<{
   }
 
   const db = getFirebaseDb();
-  const table = getBundledOfficialPointsTable();
-  const scores = getOfficialDay1Scores();
+  const scores = mergeWithOfficialScores(loadStoredScores());
+  const table = buildPointsTableFromScores(DEMO_DATA.teams, DEMO_DATA.fixtures, scores);
   const mergedFixtures = mergeFixturesWithScores(DEMO_DATA.fixtures, scores);
   const now = new Date().toISOString();
 
@@ -73,6 +74,39 @@ export async function publishRound2FixturesClient(): Promise<number> {
         teamBId: assignment.teamBId,
         teamAName: assignment.teamAName,
         teamBName: assignment.teamBName,
+        status: "scheduled",
+        updatedAt: now,
+      } satisfies Partial<Fixture> & { updatedAt: string }),
+      { merge: true }
+    );
+    updated += 1;
+  }
+
+  window.dispatchEvent(new Event("ccpl-standings-updated"));
+  return updated;
+}
+
+/** Push quarter-final pairings (top 8 from points table) to Firestore. */
+export async function publishQuarterFinalFixturesClient(): Promise<number> {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured on this site.");
+  }
+
+  const db = getFirebaseDb();
+  const scores = mergeWithOfficialScores(loadStoredScores());
+  const resolved = resolveFixturesWithScores(DEMO_DATA.fixtures, scores);
+  const now = new Date().toISOString();
+  let updated = 0;
+
+  for (const fixture of resolved.filter((entry) => entry.stage === "quarter_final")) {
+    if (!fixture.teamAId?.trim() || !fixture.teamBId?.trim()) continue;
+    await setDoc(
+      doc(db, COL.fixtures, fixture.id),
+      sanitizeForFirestore({
+        teamAId: fixture.teamAId,
+        teamBId: fixture.teamBId,
+        teamAName: fixture.teamAName,
+        teamBName: fixture.teamBName,
         status: "scheduled",
         updatedAt: now,
       } satisfies Partial<Fixture> & { updatedAt: string }),

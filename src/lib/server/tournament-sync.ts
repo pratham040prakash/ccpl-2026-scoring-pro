@@ -1,6 +1,7 @@
 import type { Ball, Fixture, Innings, Match, Player, Team } from "@/types";
 import {
   deriveCurrentStage,
+  applyQuarterFinalSeeding,
   resolveKnockoutTeams,
 } from "@/lib/engine/tournament";
 import {
@@ -112,7 +113,11 @@ async function syncKnockoutFixtures(db: Firestore): Promise<number> {
 
 export async function syncKnockoutFixturesToFirestore(
   db: Firestore
-): Promise<{ updated: number; round2: Array<{ matchId: string; teamAName: string; teamBName: string }> }> {
+): Promise<{
+  updated: number;
+  round2: Array<{ matchId: string; teamAName: string; teamBName: string }>;
+  quarterFinals: Array<{ matchId: string; teamAName: string; teamBName: string }>;
+}> {
   const seed = buildSeedData();
   const [fixturesSnap, matchesSnap, teamsSnap] = await Promise.all([
     db.collection("fixtures").get(),
@@ -139,8 +144,10 @@ export async function syncKnockoutFixturesToFirestore(
   }
   const matches = Array.from(matchByFixture.values());
 
-  const resolved = applyConfirmedRound2Fixtures(
-    resolveKnockoutTeams(fixtures, matches, table, teams)
+  const resolved = applyQuarterFinalSeeding(
+    applyConfirmedRound2Fixtures(resolveKnockoutTeams(fixtures, matches, table, teams)),
+    table,
+    teams
   );
   const now = new Date().toISOString();
   const batch = db.batch();
@@ -188,7 +195,15 @@ export async function syncKnockoutFixturesToFirestore(
       teamBName: fixture.teamBName,
     }));
 
-  return { updated, round2 };
+  const quarterFinals = resolved
+    .filter((fixture) => fixture.stage === "quarter_final")
+    .map((fixture) => ({
+      matchId: fixture.matchId,
+      teamAName: fixture.teamAName,
+      teamBName: fixture.teamBName,
+    }));
+
+  return { updated, round2, quarterFinals };
 }
 
 async function syncLeaderboards(db: Firestore): Promise<void> {

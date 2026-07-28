@@ -1,7 +1,10 @@
 import type { Fixture, Match, Team } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
 import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
-import { resolveKnockoutTeams } from "@/lib/engine/tournament";
+import {
+  applyQuarterFinalSeeding,
+  resolveKnockoutTeams,
+} from "@/lib/engine/tournament";
 import { buildSeedData } from "@/lib/seed";
 import { buildPointsTableFromScores, mergeFixturesWithScores } from "@/lib/scores/store";
 
@@ -59,5 +62,6 @@ export function resolveFixturesWithScores(
   const table = buildPointsTableFromScores(teams, withResults, scores);
   const matches = buildMatchesFromScores(withResults, scores);
   const resolved = resolveKnockoutTeams(withResults, matches, table, teams);
-  return applyConfirmedRound2Fixtures(resolved);
+  const withRound2 = applyConfirmedRound2Fixtures(resolved);
+  return applyQuarterFinalSeeding(withRound2, table, teams);
 }

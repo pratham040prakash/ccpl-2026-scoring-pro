@@ -35,7 +35,14 @@ export function PointsTable({ entries, compact }: PointsTableProps) {
                 )}
               >
                 <td className="p-3 font-bold text-primary">{entry.rank}</td>
-                <td className="p-3 font-medium">{entry.teamName}</td>
+                <td className="p-3 font-medium">
+                  {entry.teamName}
+                  {entry.rank <= 8 && entry.played > 0 && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wide text-emerald-500 font-semibold">
+                      QF
+                    </span>
+                  )}
+                </td>
                 <td className="p-3 text-center">{entry.played}</td>
                 <td className="p-3 text-center text-emerald-500">{entry.won}</td>
                 <td className="p-3 text-center text-red-400">{entry.lost}</td>

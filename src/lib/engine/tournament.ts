@@ -23,6 +23,11 @@ const STAGE_ORDER: MatchStage[] = [
   "final",
 ];
 
+/** League matches that count toward the points table (top 8 qualify for QF). */
+export const LEAGUE_STAGES: MatchStage[] = ["round_1", "integration"];
+
+export const QUALIFYING_TEAM_COUNT = 8;
+
 export function getNextStage(current: MatchStage): MatchStage | null {
   const idx = STAGE_ORDER.indexOf(current);
   return idx < STAGE_ORDER.length - 1 ? STAGE_ORDER[idx + 1] : null;
@@ -55,7 +60,7 @@ export function calculatePointsTable(
 
   const completed = matches.filter(
     (m) =>
-      m.stage === "round_1" &&
+      LEAGUE_STAGES.includes(m.stage) &&
       (m.status === "completed" || m.status === "locked" || m.status === "published")
   );
 
@@ -144,6 +149,43 @@ export function rankTeams(entries: PointsTableEntry[]): PointsTableEntry[] {
   });
 
   return sorted.map((entry, idx) => ({ ...entry, rank: idx + 1 }));
+}
+
+export function getQualifiedTeams(
+  pointsTable: PointsTableEntry[],
+  limit = QUALIFYING_TEAM_COUNT
+): PointsTableEntry[] {
+  return [...pointsTable].sort((a, b) => a.rank - b.rank).slice(0, limit);
+}
+
+/** Seed QF1–QF4 from points-table ranks: 1v8, 2v7, 3v6, 4v5. */
+export function applyQuarterFinalSeeding(
+  fixtures: Fixture[],
+  pointsTable: PointsTableEntry[],
+  teams: Team[] = []
+): Fixture[] {
+  const teamName = (teamId: string, fallback: string) =>
+    teams.find((team) => team.id === teamId)?.name ?? fallback;
+  const qualified = getQualifiedTeams(pointsTable);
+  const byRank = new Map(qualified.map((entry) => [entry.rank, entry]));
+
+  return fixtures.map((fixture) => {
+    if (fixture.stage !== "quarter_final" || !fixture.seedA || !fixture.seedB) {
+      return fixture;
+    }
+
+    const seedA = byRank.get(fixture.seedA);
+    const seedB = byRank.get(fixture.seedB);
+    if (!seedA || !seedB) return fixture;
+
+    return {
+      ...fixture,
+      teamAId: seedA.teamId,
+      teamBId: seedB.teamId,
+      teamAName: teamName(seedA.teamId, seedA.teamName),
+      teamBName: teamName(seedB.teamId, seedB.teamName),
+    };
+  });
 }
 
 export function findBestLosingTeam(
