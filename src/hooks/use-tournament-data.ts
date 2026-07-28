@@ -20,17 +20,33 @@ import {
 import { useMatchResults } from "@/providers/match-results-provider";
 import type { Player, PointsTableEntry } from "@/types";
 
+function tableUpdatedAt(table: PointsTableEntry[]): number {
+  return Math.max(
+    0,
+    ...table.map(
+      (entry) =>
+        Date.parse(String((entry as PointsTableEntry & { updatedAt?: string }).updatedAt ?? "")) ||
+        0
+    )
+  );
+}
+
 function pickBestPointsTable(
   candidates: PointsTableEntry[][]
 ): PointsTableEntry[] {
-  let best = getBundledOfficialPointsTable();
+  const bundled = getBundledOfficialPointsTable();
+  let best = bundled;
   let bestPlayed = officialStandingsPlayedCount(best);
+  let bestUpdated = 0;
 
   for (const table of candidates) {
+    if (!table.length) continue;
     const played = officialStandingsPlayedCount(table);
-    if (played > bestPlayed) {
+    const updated = tableUpdatedAt(table);
+    if (played > bestPlayed || (played === bestPlayed && updated > bestUpdated)) {
       best = table;
       bestPlayed = played;
+      bestUpdated = updated;
     }
   }
 

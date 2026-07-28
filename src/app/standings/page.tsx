@@ -1,12 +1,28 @@
 import { PointsTable } from "@/components/dashboard/points-table";
-import { buildOfficialStandings } from "@/lib/server/standings-publish";
+import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import {
+  buildOfficialStandings,
+  buildUnifiedStandingsFromFirestore,
+} from "@/lib/server/standings-publish";
 import { StandingsActions } from "./standings-actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function StandingsPage() {
-  const { table } = buildOfficialStandings();
+export default async function StandingsPage() {
+  let table = buildOfficialStandings().table;
+
+  if (isFirebaseAdminConfigured()) {
+    const db = getFirebaseAdminDb();
+    if (db) {
+      try {
+        const unified = await buildUnifiedStandingsFromFirestore(db);
+        table = unified.table;
+      } catch {
+        /* keep Day 1 fallback */
+      }
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">

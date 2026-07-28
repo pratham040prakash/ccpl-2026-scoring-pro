@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import type { PointsTableEntry } from "@/types";
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import {
   buildOfficialStandings,
-  publishOfficialStandingsToFirestore,
+  buildUnifiedStandingsFromFirestore,
   standingsPlayedCount,
 } from "@/lib/server/standings-publish";
 
@@ -13,12 +12,12 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store, max-age=0" };
 
 export async function GET() {
-  const { table: computed } = buildOfficialStandings();
-  const computedPlayed = standingsPlayedCount(computed);
+  const { table: official } = buildOfficialStandings();
+  const officialPlayed = standingsPlayedCount(official);
 
   if (!isFirebaseAdminConfigured()) {
     return NextResponse.json(
-      { table: computed, source: "official", played: computedPlayed },
+      { table: official, source: "official", played: officialPlayed },
       { headers: NO_STORE }
     );
   }
@@ -27,38 +26,29 @@ export async function GET() {
     const db = getFirebaseAdminDb();
     if (!db) {
       return NextResponse.json(
-        { table: computed, source: "official", played: computedPlayed },
+        { table: official, source: "official", played: officialPlayed },
         { headers: NO_STORE }
       );
     }
 
-    const snap = await db.collection("pointsTable").orderBy("rank").get();
-    let remoteTable = snap.docs.map((doc) => doc.data() as PointsTableEntry);
-    let remotePlayed = standingsPlayedCount(remoteTable);
-
-    if (remotePlayed < computedPlayed) {
-      const published = await publishOfficialStandingsToFirestore(db);
-      remoteTable = published.table;
-      remotePlayed = standingsPlayedCount(remoteTable);
-    }
-
-    const table = remotePlayed >= computedPlayed ? remoteTable : computed;
+    const { table, liveMatchCount } = await buildUnifiedStandingsFromFirestore(db);
     const played = standingsPlayedCount(table);
 
     return NextResponse.json(
       {
         table,
-        source: remotePlayed >= computedPlayed ? "firestore" : "official",
+        source: liveMatchCount > 0 ? "unified" : "official",
         played,
+        liveMatches: liveMatchCount,
       },
       { headers: NO_STORE }
     );
   } catch (error) {
     return NextResponse.json(
       {
-        table: computed,
+        table: official,
         source: "official",
-        played: computedPlayed,
+        played: officialPlayed,
         warning: error instanceof Error ? error.message : String(error),
       },
       { headers: NO_STORE }

@@ -1,6 +1,5 @@
-import type { Ball, Fixture, Innings, Match, Player, PointsTableEntry, Team } from "@/types";
+import type { Ball, Fixture, Innings, Match, Player, Team } from "@/types";
 import {
-  calculatePointsTable,
   deriveCurrentStage,
   resolveKnockoutTeams,
 } from "@/lib/engine/tournament";
@@ -12,6 +11,7 @@ import {
 } from "@/lib/engine/match-finalization";
 import { calculateLeaderboards } from "@/lib/engine/statistics";
 import { buildSeedData } from "@/lib/seed";
+import { buildUnifiedStandingsFromFirestore, syncUnifiedStandingsToFirestore } from "@/lib/server/standings-publish";
 import type { Firestore } from "firebase-admin/firestore";
 
 export interface FinalizeMatchResult {
@@ -101,49 +101,7 @@ export async function finalizeMatchOnServer(
 }
 
 async function syncTournamentStandings(db: Firestore): Promise<void> {
-  const { teams } = buildSeedData();
-  const teamsSnap = await db.collection("teams").get();
-  const firestoreTeams: Team[] = teamsSnap.empty
-    ? teams
-    : teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
-
-  const matchesSnap = await db.collection("matches").get();
-  const matches = matchesSnap.docs
-    .map((d) => ({ id: d.id, ...d.data() }) as Match)
-    .filter((m) =>
-      ["completed", "locked", "published"].includes(m.status)
-    );
-
-  const inningsMap: Record<string, Innings[]> = {};
-  for (const m of matches) {
-    const innSnap = await db.collection("innings").where("matchId", "==", m.id).get();
-    inningsMap[m.id] = innSnap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Innings
-    );
-  }
-
-  const settingsSnap = await db.collection("settings").doc("tournament").get();
-  const settings = settingsSnap.data() ?? { pointsWin: 2, pointsTie: 1, pointsNr: 1 };
-
-  const table: PointsTableEntry[] = calculatePointsTable(
-    firestoreTeams,
-    matches,
-    inningsMap,
-    {
-      pointsWin: settings.pointsWin ?? 2,
-      pointsTie: settings.pointsTie ?? 1,
-      pointsNr: settings.pointsNr ?? 1,
-    }
-  );
-
-  const batch = db.batch();
-  for (const entry of table) {
-    batch.set(db.collection("pointsTable").doc(entry.teamId), {
-      ...entry,
-      updatedAt: new Date().toISOString(),
-    });
-  }
-  await batch.commit();
+  await syncUnifiedStandingsToFirestore(db);
 }
 
 async function syncKnockoutFixtures(db: Firestore): Promise<void> {
@@ -161,24 +119,7 @@ async function syncKnockoutFixtures(db: Firestore): Promise<void> {
   );
   const teams = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
 
-  const inningsMap: Record<string, Innings[]> = {};
-  for (const m of matches.filter((x) =>
-    ["completed", "locked", "published"].includes(x.status)
-  )) {
-    const innSnap = await db.collection("innings").where("matchId", "==", m.id).get();
-    inningsMap[m.id] = innSnap.docs.map(
-      (d) => ({ id: d.id, ...d.data() }) as Innings
-    );
-  }
-
-  const settingsSnap = await db.collection("settings").doc("tournament").get();
-  const settings = settingsSnap.data() ?? { pointsWin: 2, pointsTie: 1, pointsNr: 1 };
-
-  const table = calculatePointsTable(teams, matches, inningsMap, {
-    pointsWin: settings.pointsWin ?? 2,
-    pointsTie: settings.pointsTie ?? 1,
-    pointsNr: settings.pointsNr ?? 1,
-  });
+  const { table } = await buildUnifiedStandingsFromFirestore(db);
 
   const resolved = resolveKnockoutTeams(fixtures, matches, table, teams);
   const now = new Date().toISOString();
