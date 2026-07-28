@@ -1,5 +1,6 @@
 import { doc, setDoc } from "firebase/firestore";
-import type { PointsTableEntry } from "@/types";
+import type { Fixture, PointsTableEntry } from "@/types";
+import { ROUND_2_CONFIRMED } from "@/data/round2-assignments";
 import { getOfficialDay1Scores, getBundledOfficialPointsTable } from "@/lib/scores/official-results";
 import { mergeFixturesWithScores } from "@/lib/scores/store";
 import { DEMO_DATA } from "@/lib/seed";
@@ -52,6 +53,36 @@ export async function publishDay1StandingsClient(): Promise<{
 
   window.dispatchEvent(new Event("ccpl-standings-updated"));
   return { teams: table.length, fixtures: fixturesUpdated };
+}
+
+/** Push confirmed Round 2 team assignments to Firestore fixtures. */
+export async function publishRound2FixturesClient(): Promise<number> {
+  if (!isFirebaseConfigured()) {
+    throw new Error("Firebase is not configured on this site.");
+  }
+
+  const db = getFirebaseDb();
+  const now = new Date().toISOString();
+  let updated = 0;
+
+  for (const [fixtureId, assignment] of Object.entries(ROUND_2_CONFIRMED)) {
+    await setDoc(
+      doc(db, COL.fixtures, fixtureId),
+      sanitizeForFirestore({
+        teamAId: assignment.teamAId,
+        teamBId: assignment.teamBId,
+        teamAName: assignment.teamAName,
+        teamBName: assignment.teamBName,
+        status: "scheduled",
+        updatedAt: now,
+      } satisfies Partial<Fixture> & { updatedAt: string }),
+      { merge: true }
+    );
+    updated += 1;
+  }
+
+  window.dispatchEvent(new Event("ccpl-standings-updated"));
+  return updated;
 }
 
 export async function publishPointsTableClient(entries: PointsTableEntry[]): Promise<number> {

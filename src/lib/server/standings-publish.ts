@@ -9,12 +9,19 @@ import {
   mergeFixturesWithScores,
 } from "@/lib/scores/store";
 
-function isCompletedFirestoreMatch(match: Match): boolean {
-  return (
-    match.status === "completed" ||
-    match.locked === true ||
-    match.published === true
+function isStandingsEligibleMatch(match: Match): boolean {
+  if (match.status === "completed") return true;
+  return match.locked === true && Boolean(match.result?.winnerName || match.result?.summary);
+}
+
+function resolveFixtureKey(match: Match, fixtures: Fixture[]): string {
+  if (match.fixtureId && fixtures.some((fixture) => fixture.id === match.fixtureId)) {
+    return match.fixtureId;
+  }
+  const fixture = fixtures.find(
+    (entry) => entry.matchId.toUpperCase() === match.matchId?.toUpperCase()
   );
+  return fixture?.id ?? match.fixtureId;
 }
 
 export function buildOfficialStandings(): {
@@ -48,25 +55,22 @@ export async function buildUnifiedStandingsFromFirestore(
   const matchesSnap = await db.collection("matches").get();
   const completedMatches = matchesSnap.docs
     .map((doc) => ({ id: doc.id, ...doc.data() }) as Match)
-    .filter(isCompletedFirestoreMatch);
+    .filter(isStandingsEligibleMatch);
 
   let liveMatchCount = 0;
   for (const match of completedMatches) {
-    const inningsSnap = await db
-      .collection("innings")
-      .where("matchId", "==", match.id)
-      .orderBy("inningsNumber")
-      .get();
+    const inningsSnap = await db.collection("innings").where("matchId", "==", match.id).get();
 
-    const inningsList = inningsSnap.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() }) as Innings
-    );
+    const inningsList = inningsSnap.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as Innings)
+      .sort((a, b) => a.inningsNumber - b.inningsNumber);
+
     if (inningsList.length < 2) continue;
 
     const stored = buildStoredScoreFromLive(match, inningsList);
     if (!stored) continue;
 
-    mergedScores[match.fixtureId] = stored;
+    mergedScores[resolveFixtureKey(match, seed.fixtures)] = stored;
     if (stored.source === "live") liveMatchCount += 1;
   }
 

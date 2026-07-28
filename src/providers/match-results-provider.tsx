@@ -18,6 +18,7 @@ import {
   mergeWithOfficialScores,
   saveUserScoresOnly,
 } from "@/lib/scores/official-results";
+import { resolveFixturesWithScores } from "@/lib/scores/fixture-resolution";
 import {
   buildPointsTableFromScores,
   buildStoredScore,
@@ -105,7 +106,7 @@ export function MatchResultsProvider({ children }: { children: ReactNode }) {
   );
 
   const getMergedFixtures = useCallback(
-    (base: Fixture[]) => mergeFixturesWithScores(base, scores),
+    (base: Fixture[]) => resolveFixturesWithScores(base, scores),
     [scores]
   );
 

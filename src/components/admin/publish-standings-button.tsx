@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Upload } from "lucide-react";
-import { publishDay1StandingsClient } from "@/lib/firebase/publish-standings-client";
+import { publishDay1StandingsClient, publishRound2FixturesClient } from "@/lib/firebase/publish-standings-client";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
 
 export function PublishStandingsButton() {
@@ -14,12 +14,13 @@ export function PublishStandingsButton() {
   return (
     <div className="glass-card p-4 border border-emerald-500/30 space-y-3">
       <div>
-        <h3 className="font-bold text-emerald-400">Publish Day 1 standings for everyone</h3>
+        <h3 className="font-bold text-emerald-400">Publish standings & Round 2 fixtures</h3>
         <p className="text-sm text-slate-400 mt-1">
-          Writes official Day 1 results to Firestore so all phones and browsers show the same
-          points table — not just your admin browser.
+          Writes standings and confirmed Round 2 pairings to Firestore so all devices show the same
+          points table and fixtures.
         </p>
       </div>
+      <div className="flex flex-wrap gap-2">
       <button
         type="button"
         disabled={busy}
@@ -28,8 +29,9 @@ export function PublishStandingsButton() {
           setMessage(null);
           try {
             const result = await publishDay1StandingsClient();
+            const round2 = await publishRound2FixturesClient();
             setMessage(
-              `Published ${result.teams} teams and ${result.fixtures} completed fixtures. Ask everyone to refresh Standings.`
+              `Published ${result.teams} teams, ${result.fixtures} R1 results, and ${round2} Round 2 fixtures. Ask everyone to refresh.`
             );
           } catch (error) {
             setMessage(error instanceof Error ? error.message : String(error));
@@ -40,8 +42,9 @@ export function PublishStandingsButton() {
         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
       >
         <Upload className="w-4 h-4" />
-        {busy ? "Publishing…" : "Publish Day 1 to Firestore"}
+        {busy ? "Publishing…" : "Publish to Firestore"}
       </button>
+      </div>
       {message && <p className="text-sm text-slate-300 whitespace-pre-wrap">{message}</p>}
     </div>
   );

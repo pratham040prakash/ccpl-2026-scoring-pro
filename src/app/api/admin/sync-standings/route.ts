@@ -6,6 +6,7 @@ import {
   standingsPlayedCount,
   syncUnifiedStandingsToFirestore,
 } from "@/lib/server/standings-publish";
+import { syncKnockoutFixturesToFirestore } from "@/lib/server/tournament-sync";
 
 export const runtime = "nodejs";
 
@@ -37,16 +38,19 @@ export async function POST(request: Request) {
     if (!db) throw new Error("Firestore Admin SDK unavailable");
 
     const { table, liveMatchCount } = await syncUnifiedStandingsToFirestore(db);
+    const { updated: fixturesUpdated, round2 } = await syncKnockoutFixturesToFirestore(db);
     const { scores: day1Scores } = buildOfficialStandings();
 
     return NextResponse.json({
       success: true,
       message:
         liveMatchCount > 0
-          ? `Synced Day 1 (${Object.keys(day1Scores).length} matches) plus ${liveMatchCount} live match(es) to shared standings.`
-          : `Published ${Object.keys(day1Scores).length} Day 1 matches to shared standings.`,
+          ? `Synced standings and updated ${fixturesUpdated} fixture(s) including Round 2.`
+          : `Published Day 1 standings and updated ${fixturesUpdated} fixture(s).`,
       day1Matches: Object.keys(day1Scores).length,
       liveMatches: liveMatchCount,
+      fixturesUpdated,
+      round2,
       teamsInTable: table.length,
       played: standingsPlayedCount(table),
       topTeam: table[0]?.teamName,

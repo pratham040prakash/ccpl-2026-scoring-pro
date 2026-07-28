@@ -155,8 +155,12 @@ export function findBestLosingTeam(
   const losers: PointsTableEntry[] = [];
 
   for (const fixture of r1Fixtures) {
-    const match = matches.find((m) => m.fixtureId === fixture.id);
-    if (!match?.result) continue;
+    const match = matches.find(
+      (m) =>
+        m.fixtureId === fixture.id ||
+        m.matchId?.toUpperCase() === fixture.matchId.toUpperCase()
+    );
+    if (!match?.result?.winnerId) continue;
     const loserId =
       match.result.winnerId === match.teamAId
         ? match.teamBId
@@ -285,8 +289,12 @@ function getWinnerOfMatchId(
     (f) => f.matchId.toUpperCase() === matchId.toUpperCase()
   );
   if (!fixture) return "";
-  const match = matches.find((m) => m.fixtureId === fixture.id);
-  return match?.result?.winnerId || "";
+  const match = matches.find(
+    (m) =>
+      m.fixtureId === fixture.id ||
+      m.matchId?.toUpperCase() === matchId.toUpperCase()
+  );
+  return match?.result?.winnerId || fixture.winnerId || "";
 }
 
 export function canProgressStage(

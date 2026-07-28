@@ -11,6 +11,8 @@ import {
 } from "@/lib/engine/match-finalization";
 import { calculateLeaderboards } from "@/lib/engine/statistics";
 import { buildSeedData } from "@/lib/seed";
+import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
+import { buildMatchesFromScores } from "@/lib/scores/fixture-resolution";
 import { buildUnifiedStandingsFromFirestore, syncUnifiedStandingsToFirestore } from "@/lib/server/standings-publish";
 import type { Firestore } from "firebase-admin/firestore";
 
@@ -104,26 +106,45 @@ async function syncTournamentStandings(db: Firestore): Promise<void> {
   await syncUnifiedStandingsToFirestore(db);
 }
 
-async function syncKnockoutFixtures(db: Firestore): Promise<void> {
+async function syncKnockoutFixtures(db: Firestore): Promise<number> {
+  return (await syncKnockoutFixturesToFirestore(db)).updated;
+}
+
+export async function syncKnockoutFixturesToFirestore(
+  db: Firestore
+): Promise<{ updated: number; round2: Array<{ matchId: string; teamAName: string; teamBName: string }> }> {
+  const seed = buildSeedData();
   const [fixturesSnap, matchesSnap, teamsSnap] = await Promise.all([
     db.collection("fixtures").get(),
     db.collection("matches").get(),
     db.collection("teams").get(),
   ]);
 
-  const fixtures = fixturesSnap.docs.map(
-    (d) => ({ id: d.id, ...d.data() }) as Fixture
-  );
-  const matches = matchesSnap.docs.map(
+  const fixtures = fixturesSnap.empty
+    ? seed.fixtures
+    : fixturesSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Fixture);
+  const firestoreMatches = matchesSnap.docs.map(
     (d) => ({ id: d.id, ...d.data() }) as Match
   );
-  const teams = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
+  const teams = teamsSnap.empty
+    ? seed.teams
+    : teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Team);
 
-  const { table } = await buildUnifiedStandingsFromFirestore(db);
+  const { table, scores } = await buildUnifiedStandingsFromFirestore(db);
+  const scoreMatches = buildMatchesFromScores(fixtures, scores);
+  const matchByFixture = new Map<string, Match>();
+  for (const match of scoreMatches) matchByFixture.set(match.fixtureId, match);
+  for (const match of firestoreMatches) {
+    if (match.result?.winnerId) matchByFixture.set(match.fixtureId, match);
+  }
+  const matches = Array.from(matchByFixture.values());
 
-  const resolved = resolveKnockoutTeams(fixtures, matches, table, teams);
+  const resolved = applyConfirmedRound2Fixtures(
+    resolveKnockoutTeams(fixtures, matches, table, teams)
+  );
   const now = new Date().toISOString();
   const batch = db.batch();
+  let updated = 0;
 
   for (const fixture of resolved) {
     const original = fixtures.find((f) => f.id === fixture.id);
@@ -147,6 +168,7 @@ async function syncKnockoutFixtures(db: Firestore): Promise<void> {
         },
         { merge: true }
       );
+      updated += 1;
     }
   }
 
@@ -157,6 +179,16 @@ async function syncKnockoutFixtures(db: Firestore): Promise<void> {
   );
 
   await batch.commit();
+
+  const round2 = resolved
+    .filter((fixture) => fixture.stage === "integration")
+    .map((fixture) => ({
+      matchId: fixture.matchId,
+      teamAName: fixture.teamAName,
+      teamBName: fixture.teamBName,
+    }));
+
+  return { updated, round2 };
 }
 
 async function syncLeaderboards(db: Firestore): Promise<void> {
