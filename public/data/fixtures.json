@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-29T07:34:45.554Z",
+  "updatedAt": "2026-07-28T14:51:21.551Z",
   "source": "fair-r1-plus-r2-placement",
   "fixtures": [
     {
@@ -192,7 +192,7 @@
       "teamAId": "data-warriors",
       "teamBId": "11-daulath-s",
       "winnerId": "11-daulath-s",
-      "loserId": "data-warriors"
+      "loserId": "r1-9th-winner"
     },
     {
       "matchId": "R2-2",
@@ -213,7 +213,7 @@
       "teamAId": "play-bold-xi",
       "teamBId": "lifecycle-cricket-team",
       "winnerId": "play-bold-xi",
-      "loserId": "lifecycle-cricket-team"
+      "loserId": "r1-8th-winner"
     },
     {
       "matchId": "QF1",
@@ -247,7 +247,7 @@
       "stage": "quarter_final",
       "overs": 8,
       "ground": "Ground 1",
-      "status": "completed",
+      "status": "scheduled",
       "order": 13,
       "seedA": 2,
       "seedB": 7,
@@ -255,9 +255,7 @@
       "placeholderB": "Seed 7",
       "id": "qf2",
       "teamAId": "slog-squad",
-      "teamBId": "play-bold-xi",
-      "winnerId": "play-bold-xi",
-      "loserId": "slog-squad"
+      "teamBId": "play-bold-xi"
     },
     {
       "matchId": "QF3",
@@ -326,7 +324,7 @@
       "day": 4,
       "startTime": "11:00",
       "endTime": "13:00",
-      "teamAName": "Play Bold XI",
+      "teamAName": "QuarterFinal Winner 2",
       "teamBName": "QuarterFinal Winner 3",
       "stage": "semi_final",
       "overs": 10,
@@ -336,7 +334,7 @@
       "placeholderA": "QuarterFinal Winner 2",
       "placeholderB": "QuarterFinal Winner 3",
       "id": "sf2",
-      "teamAId": "play-bold-xi",
+      "teamAId": "",
       "teamBId": ""
     },
     {

@@ -1,7 +1,6 @@
 import { DAY1_MATCH_RESULTS_CSV } from "@/data/day1-2026-07-27-match-results";
 import { FULL_MATCH_RESULTS_CSV } from "@/data/ccpl-2026-full-match-results";
 import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
-import { applyConfirmedQuarterFinalFixtures } from "@/data/quarter-final-assignments";
 import { buildSeedData } from "@/lib/seed";
 import { buildFairPointsTableFromScores } from "@/lib/scores/fair-standings";
 import type { PointsTableEntry } from "@/types";
@@ -18,15 +17,13 @@ let allOfficialCache: Record<string, StoredMatchScore> | null = null;
 
 function scoresFromCsv(csvText: string): Record<string, StoredMatchScore> {
   const seed = buildSeedData();
-  const fixtures = applyConfirmedQuarterFinalFixtures(
-    applyConfirmedRound2Fixtures(seed.fixtures)
-  );
+  const fixtures = applyConfirmedRound2Fixtures(seed.fixtures);
   const rows = parseScoreCsv(csvText, fixtures);
   const scores: Record<string, StoredMatchScore> = {};
 
   for (const row of rows) {
     if (row.errors.length) continue;
-    const fixture = fixtures.find(
+    const fixture = seed.fixtures.find(
       (f) => f.matchId.toUpperCase() === row.matchId.toUpperCase()
     );
     if (!fixture) continue;
