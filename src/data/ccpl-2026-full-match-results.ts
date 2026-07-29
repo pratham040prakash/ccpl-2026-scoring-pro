@@ -11,4 +11,5 @@ R1-8,30,6,6,56,5,6,Slog Squad,26 runs
 R1-9,38,4,6,39,4,5.3,Lifecycle Cricket Team,6 wickets
 R2-1,37,4,6,77,0,6,11 Daulath's,40 runs
 R2-2,42,5,6,35,1,6,Play Bold XI,7 runs
+QF2,54,6,8,54,5,8,Play Bold XI,Super Over
 `;
