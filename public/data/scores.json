@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-28T14:51:21.551Z",
+  "updatedAt": "2026-07-29T07:34:45.554Z",
   "source": "official-all-matches",
   "scores": {
     "r1-1": {
@@ -23,7 +23,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.553Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-2": {
       "fixtureId": "r1-2",
@@ -46,7 +46,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.553Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-3": {
       "fixtureId": "r1-3",
@@ -69,7 +69,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.553Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-4": {
       "fixtureId": "r1-4",
@@ -92,7 +92,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-5": {
       "fixtureId": "r1-5",
@@ -115,7 +115,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-6": {
       "fixtureId": "r1-6",
@@ -138,7 +138,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-7": {
       "fixtureId": "r1-7",
@@ -161,7 +161,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.557Z"
     },
     "r1-8": {
       "fixtureId": "r1-8",
@@ -184,7 +184,7 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.558Z"
     },
     "r1-9": {
       "fixtureId": "r1-9",
@@ -207,15 +207,15 @@
       "marginType": "wickets",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.558Z"
     },
     "r2-1": {
       "fixtureId": "r2-1",
       "matchId": "R2-1",
-      "teamAId": "r1-9th-winner",
-      "teamBId": "r1-best-looser-1",
-      "teamAName": "R1 9th Winner",
-      "teamBName": "R1 Best Looser 1",
+      "teamAId": "data-warriors",
+      "teamBId": "11-daulath-s",
+      "teamAName": "Data Warriors",
+      "teamBName": "11 Daulath's",
       "teamARuns": 37,
       "teamAWickets": 4,
       "teamAOvers": 6,
@@ -230,15 +230,15 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.558Z"
     },
     "r2-2": {
       "fixtureId": "r2-2",
       "matchId": "R2-2",
-      "teamAId": "r1-8th-winner",
-      "teamBId": "r1-7th-winner",
-      "teamAName": "R1 8th Winner",
-      "teamBName": "R1 7th Winner",
+      "teamAId": "play-bold-xi",
+      "teamBId": "lifecycle-cricket-team",
+      "teamAName": "Play Bold XI",
+      "teamBName": "Lifecycle Cricket Team",
       "teamARuns": 42,
       "teamAWickets": 5,
       "teamAOvers": 6,
@@ -253,7 +253,30 @@
       "marginType": "runs",
       "status": "published",
       "source": "csv",
-      "updatedAt": "2026-07-28T14:51:21.554Z"
+      "updatedAt": "2026-07-29T07:34:45.558Z"
+    },
+    "qf2": {
+      "fixtureId": "qf2",
+      "matchId": "QF2",
+      "teamAId": "slog-squad",
+      "teamBId": "play-bold-xi",
+      "teamAName": "Slog Squad",
+      "teamBName": "Play Bold XI",
+      "teamARuns": 53,
+      "teamAWickets": 7,
+      "teamAOvers": 8,
+      "teamABalls": 0,
+      "teamBRuns": 55,
+      "teamBWickets": 4,
+      "teamBOvers": 8,
+      "teamBBalls": 0,
+      "winnerName": "Play Bold XI",
+      "winnerId": "play-bold-xi",
+      "margin": "2 runs",
+      "marginType": "runs",
+      "status": "published",
+      "source": "csv",
+      "updatedAt": "2026-07-29T07:34:45.558Z"
     }
   }
 }
