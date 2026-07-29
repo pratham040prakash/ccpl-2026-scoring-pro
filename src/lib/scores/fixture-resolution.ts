@@ -2,6 +2,7 @@ import type { Fixture, Match, Team } from "@/types";
 import type { StoredMatchScore } from "@/types/scores";
 import { applyConfirmedRound2Fixtures } from "@/data/round2-assignments";
 import { applyConfirmedQuarterFinalFixtures } from "@/data/quarter-final-assignments";
+import { applyConfirmedSemiFinalFixtures } from "@/data/semi-final-assignments";
 import {
   applyQuarterFinalSeeding,
   resolveKnockoutTeams,
@@ -24,5 +25,7 @@ export function resolveFixturesWithScores(
   const resolved = resolveKnockoutTeams(withResults, matches, table, teams);
   const withRound2 = applyConfirmedRound2Fixtures(resolved);
   const withQuarterFinals = applyQuarterFinalSeeding(withRound2, table, teams);
-  return applyConfirmedQuarterFinalFixtures(withQuarterFinals);
+  return applyConfirmedSemiFinalFixtures(
+    applyConfirmedQuarterFinalFixtures(withQuarterFinals)
+  );
 }
