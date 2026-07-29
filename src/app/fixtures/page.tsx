@@ -67,7 +67,18 @@ export default function FixturesPage() {
           ))}
         </div>
       ) : (
-        <FixtureList fixtures={filtered} title={`${filtered.length} Matches`} />
+        <>
+          {filter === "semi_final" && (
+            <div className="mb-6 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4 text-sm text-slate-600 dark:text-slate-300">
+              <p className="font-semibold text-primary mb-1">Semi-Final Fixtures</p>
+              <p>
+                Congratulations to all the semi-finalists for fighting hard to earn their place here.
+                We&apos;re wrapping up the tournament tomorrow—see you at the ground!
+              </p>
+            </div>
+          )}
+          <FixtureList fixtures={filtered} title={`${filtered.length} Matches`} />
+        </>
       )}
     </div>
   );

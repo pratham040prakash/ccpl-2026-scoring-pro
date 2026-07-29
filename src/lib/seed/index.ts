@@ -7,7 +7,7 @@ import type {
   Team,
   TournamentSettings,
 } from "@/types";
-import { slugify, generateId } from "@/lib/utils";
+import { slugify } from "@/lib/utils";
 import teamsData from "@/data/teams.json";
 
 interface SeedTeam {
@@ -195,14 +195,21 @@ export function buildSeedData(): {
 
   const announcements: Announcement[] = [
     {
-      id: generateId("ann"),
+      id: "ann-semi-finals-2026",
+      title: "Semi-Final Fixtures",
+      body: "Congratulations to all the semi-finalists for fighting hard to earn their place here. We're wrapping up the tournament tomorrow—see you at the ground!",
+      priority: "high",
+      publishedAt: now,
+    },
+    {
+      id: "ann-welcome-2026",
       title: "Welcome to CCPL 2026!",
       body: "Cisco Champions Premier League begins July 27, 2026. Follow live scores, standings, and stats on CCPL Scoring Pro.",
       priority: "high",
       publishedAt: now,
     },
     {
-      id: generateId("ann"),
+      id: "ann-scorer-registration",
       title: "Scorer Registration Open",
       body: "Volunteer scorers can sign in with Google and request scorer access from the admin panel.",
       priority: "normal",

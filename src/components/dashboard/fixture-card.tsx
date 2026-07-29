@@ -103,7 +103,8 @@ export function FixtureCard({ fixture, compact }: FixtureCardProps) {
           href={`/live/${fixture.id}`}
           className="mt-3 flex items-center justify-center gap-1 text-sm text-primary font-medium hover:underline"
         >
-          View Live <ChevronRight className="w-4 h-4" />
+          {fixture.status === "completed" ? "View Scorecard" : "View Live"}
+          <ChevronRight className="w-4 h-4" />
         </Link>
       )}
     </motion.div>
