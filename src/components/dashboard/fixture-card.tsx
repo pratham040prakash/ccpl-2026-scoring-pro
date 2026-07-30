@@ -100,7 +100,7 @@ export function FixtureCard({ fixture, compact }: FixtureCardProps) {
 
       {(isLive || fixture.status === "completed") && (
         <Link
-          href={`/match/${fixture.id}/scorecard`}
+          href={`/live/${fixture.id}`}
           className="mt-3 flex items-center justify-center gap-1 text-sm text-primary font-medium hover:underline"
         >
           {fixture.status === "completed" ? "View Scorecard" : "Live Scorecard"}
