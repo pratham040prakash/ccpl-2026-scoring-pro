@@ -134,7 +134,7 @@ export function resolveScorecardMode(options: {
   hasBallByBall: boolean;
 }): ScorecardMode {
   if (options.fixtureStatus === "live") return "live";
-  if (options.hasBallByBall && options.firestoreInningsCount >= 2) return "full";
+  if (options.hasBallByBall) return "full";
   if (options.storedScore || options.fixtureStatus === "completed") return "summary";
   if (options.firestoreInningsCount > 0) return "live";
   return "pending";

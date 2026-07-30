@@ -68,6 +68,90 @@ export function generateScorecardPDF(
   doc.save(`${match.matchId}-scorecard.pdf`);
 }
 
+export function exportScorecardCSV(
+  match: Match,
+  innings: Innings[],
+  batters: BatterScore[],
+  bowlers: BowlerScore[]
+): void {
+  const batting = batters.map((b) => ({
+    matchId: match.matchId,
+    player: b.playerName,
+    runs: b.runs,
+    balls: b.balls,
+    fours: b.fours,
+    sixes: b.sixes,
+    strikeRate: b.strikeRate,
+    out: b.isOut,
+    dismissal: b.dismissal ?? "",
+  }));
+  const bowling = bowlers.map((b) => ({
+    matchId: match.matchId,
+    bowler: b.playerName,
+    overs: `${Math.floor(b.balls / 6)}.${b.balls % 6}`,
+    runs: b.runs,
+    wickets: b.wickets,
+    economy: b.economy,
+  }));
+  const lines = [
+    `# ${match.teamAName} vs ${match.teamBName}`,
+    ...innings.map((inn) => `${inn.teamName},${inn.runs}/${inn.wickets}`),
+    "",
+    "Batting",
+    "Player,Runs,Balls,4s,6s,SR,Out,Dismissal",
+    ...batting.map(
+      (b) =>
+        `${b.player},${b.runs},${b.balls},${b.fours},${b.sixes},${b.strikeRate},${b.out},${b.dismissal}`
+    ),
+    "",
+    "Bowling",
+    "Bowler,Overs,Runs,Wickets,Economy",
+    ...bowling.map((b) => `${b.bowler},${b.overs},${b.runs},${b.wickets},${b.economy}`),
+  ];
+  downloadBlob(lines.join("\n"), `${match.matchId}-scorecard.csv`, "text/csv");
+}
+
+export function exportScorecardExcel(
+  match: Match,
+  innings: Innings[],
+  batters: BatterScore[],
+  bowlers: BowlerScore[]
+): void {
+  const batting = batters.map((b) => ({
+    Player: b.playerName,
+    Runs: b.runs,
+    Balls: b.balls,
+    Fours: b.fours,
+    Sixes: b.sixes,
+    StrikeRate: b.strikeRate,
+    Out: b.isOut,
+    Dismissal: b.dismissal ?? "",
+  }));
+  const bowling = bowlers.map((b) => ({
+    Bowler: b.playerName,
+    Overs: `${Math.floor(b.balls / 6)}.${b.balls % 6}`,
+    Runs: b.runs,
+    Wickets: b.wickets,
+    Economy: b.economy,
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(batting), "Batting");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bowling), "Bowling");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.json_to_sheet(
+      innings.map((inn) => ({
+        Team: inn.teamName,
+        Runs: inn.runs,
+        Wickets: inn.wickets,
+        Overs: `${inn.overs}.${inn.balls}`,
+      }))
+    ),
+    "Innings"
+  );
+  XLSX.writeFile(wb, `${match.matchId}-scorecard.xlsx`);
+}
+
 export function generatePointsTablePDF(entries: PointsTableEntry[]): void {
   const doc = new jsPDF();
   doc.setFontSize(18);

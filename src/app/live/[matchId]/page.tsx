@@ -93,6 +93,12 @@ export default function LiveMatchPage({
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link
+            href={`/match/${fixture.id}/scorecard`}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm"
+          >
+            Scorecard
+          </Link>
+          <Link
             href={`/match/${fixture.id}/tv`}
             className="flex items-center gap-2 px-4 py-2 rounded-lg glass-card text-sm"
           >

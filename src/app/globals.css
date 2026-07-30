@@ -172,3 +172,21 @@ body {
   transform: scale(0.96);
   filter: brightness(1.08);
 }
+
+@media print {
+  header,
+  footer,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  .scorecard-print-root {
+    max-width: 100%;
+  }
+
+  .glass-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+}
