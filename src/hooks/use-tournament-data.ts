@@ -18,6 +18,7 @@ import {
   officialStandingsPlayedCount,
 } from "@/lib/scores/official-results";
 import { useMatchResults } from "@/providers/match-results-provider";
+import { resolveFixtureByRouteId } from "@/lib/utils";
 import type { Fixture, Player, PointsTableEntry } from "@/types";
 
 function tableUpdatedAt(table: PointsTableEntry[]): number {
@@ -301,7 +302,10 @@ export function useTournamentCountdown() {
   });
 }
 
-export function useMatchScore(fixtureId: string) {
+export function useMatchScore(routeId: string) {
   const { scores } = useMatchResults();
-  return scores[fixtureId];
+  const { data: fixtures = [] } = useFixtures();
+  const fixture = resolveFixtureByRouteId(fixtures, routeId);
+  const key = fixture?.id ?? routeId;
+  return scores[key] ?? scores[routeId];
 }

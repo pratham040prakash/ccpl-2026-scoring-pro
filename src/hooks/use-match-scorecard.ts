@@ -17,6 +17,7 @@ import {
 } from "@/lib/match/match-scorecard";
 import { useLiveMatch } from "./use-live-match";
 import { useMatchScore, useFixtures } from "./use-tournament-data";
+import { resolveFixtureByRouteId } from "@/lib/utils";
 
 export interface UseMatchScorecardResult {
   mode: ScorecardMode;
@@ -44,7 +45,7 @@ export function useMatchScorecard(fixtureId: string): UseMatchScorecardResult {
   const live = useLiveMatch(fixtureId);
   const storedScore = useMatchScore(fixtureId);
   const { data: fixtures = [] } = useFixtures();
-  const fixture = live.fixture ?? fixtures.find((f) => f.id === fixtureId);
+  const fixture = live.fixture ?? resolveFixtureByRouteId(fixtures, fixtureId);
 
   const [ballsByInnings, setBallsByInnings] = useState<Record<string, Ball[]>>({});
   const [ballsLoading, setBallsLoading] = useState(false);

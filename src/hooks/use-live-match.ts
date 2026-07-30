@@ -17,6 +17,7 @@ import {
   aggregateBowlerScores,
 } from "@/lib/engine/statistics";
 import { useFixtures } from "./use-tournament-data";
+import { resolveFixtureByRouteId } from "@/lib/utils";
 
 export interface UseLiveMatchResult extends LiveMatchState {
   loading: boolean;
@@ -54,7 +55,7 @@ function fixtureToMatch(fixture: Fixture): Match {
 
 export function useLiveMatch(matchId: string): UseLiveMatchResult {
   const { data: fixtures = [] } = useFixtures();
-  const fixture = fixtures.find((f) => f.id === matchId || f.matchDocId === matchId);
+  const fixture = resolveFixtureByRouteId(fixtures, matchId);
 
   const [match, setMatch] = useState<Match | null>(null);
   const [inningsList, setInningsList] = useState<Innings[]>([]);

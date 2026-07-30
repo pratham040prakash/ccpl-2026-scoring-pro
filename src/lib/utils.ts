@@ -109,3 +109,22 @@ export function economy(runs: number, balls: number): number {
   if (balls === 0) return 0;
   return Math.round((runs / balls) * 60 * 10) / 10;
 }
+
+/** Resolve fixture from URL segment (id, matchDocId, or matchId like QF2). */
+export function resolveFixtureByRouteId<T extends { id: string; matchId: string; matchDocId?: string }>(
+  fixtures: T[],
+  routeId: string
+): T | undefined {
+  const key = routeId.trim().toLowerCase();
+  return fixtures.find(
+    (f) =>
+      f.id === routeId ||
+      f.id.toLowerCase() === key ||
+      f.matchDocId === routeId ||
+      f.matchId.toLowerCase() === key
+  );
+}
+
+export function scorecardUrl(fixture: { id: string }): string {
+  return `/match/${fixture.id}/scorecard`;
+}
